@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>1041032348170-v00p842r15ser9nn4bu5n6e9gkfcs9pf.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.1041032348170-v00p842r15ser9nn4bu5n6e9gkfcs9pf</string>
+	<key>API_KEY</key>
+	<string>AIzaSyCwd42AUbGuK2WTZumsZCqwCtRUcY-5Zy4</string>
+	<key>GCM_SENDER_ID</key>
+	<string>1041032348170</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>com.saloon.saloonApp</string>
+	<key>PROJECT_ID</key>
+	<string>saloon-acaee</string>
+	<key>STORAGE_BUCKET</key>
+	<string>saloon-acaee.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:1041032348170:ios:75010c00e1fc779d5f15f3</string>
+</dict>
+</plist>
