@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geolocator/geolocator.dart';
 import '../../../../../core/constants/app_colors.dart';
 import '../../../../../core/constants/app_text_styles.dart';
 import '../../../../../core/widgets/app_button.dart';
@@ -40,12 +41,11 @@ class _CreateSalonScreenState extends State<CreateSalonScreen> {
   final _cityController = TextEditingController();
   final _stateController = TextEditingController();
   final _pincodeController = TextEditingController();
-  final _latitudeController = TextEditingController();
-  final _longitudeController = TextEditingController();
+  double? _latitude;
+  double? _longitude;
+  bool _isDetectingLocation = false;
 
   // Step 3 - Settings
-  final _commissionController = TextEditingController(text: '20');
-  final _advanceTimeController = TextEditingController(text: '30');
   final _cancellationPolicyController = TextEditingController();
   final List<String> _selectedAmenities = [];
 
@@ -68,10 +68,6 @@ class _CreateSalonScreenState extends State<CreateSalonScreen> {
     _cityController.dispose();
     _stateController.dispose();
     _pincodeController.dispose();
-    _latitudeController.dispose();
-    _longitudeController.dispose();
-    _commissionController.dispose();
-    _advanceTimeController.dispose();
     _cancellationPolicyController.dispose();
     super.dispose();
   }
@@ -178,11 +174,6 @@ class _CreateSalonScreenState extends State<CreateSalonScreen> {
         'pincode': _pincodeController.text.trim(),
 
         // Settings
-        'commission_percentage':
-            int.tryParse(_commissionController.text) ?? 20,
-        'booking_advance_time':
-            int.tryParse(_advanceTimeController.text) ?? 30,
-        'cancellation_policy': _cancellationPolicyController.text.trim(),
         'amenities': _selectedAmenities,
       };
 
@@ -190,12 +181,9 @@ class _CreateSalonScreenState extends State<CreateSalonScreen> {
         body['cover_image'] = _coverImageUrl;
       }
 
-      if (_latitudeController.text.isNotEmpty &&
-          _longitudeController.text.isNotEmpty) {
-        body['latitude'] =
-            double.tryParse(_latitudeController.text) ?? 0;
-        body['longitude'] =
-            double.tryParse(_longitudeController.text) ?? 0;
+      if (_latitude != null && _longitude != null) {
+        body['latitude'] = _latitude;
+        body['longitude'] = _longitude;
       }
 
       await _api.post(ApiConfig.createSalon, body: body);
@@ -364,58 +352,6 @@ class _CreateSalonScreenState extends State<CreateSalonScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            const Text('Cover Image', style: AppTextStyles.labelLarge),
-            const SizedBox(height: 4),
-            Text('This image will be shown on the salon listing',
-                style: AppTextStyles.caption),
-            const SizedBox(height: 10),
-            GestureDetector(
-              onTap: _onCoverImageTap,
-              child: Container(
-                height: 160,
-                width: double.infinity,
-                decoration: BoxDecoration(
-                  color: AppColors.softSurface,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: AppColors.border),
-                  image: _coverImageUrl != null
-                      ? DecorationImage(
-                          image: NetworkImage(
-                            ApiConfig.imageUrl(_coverImageUrl) ?? _coverImageUrl!,
-                          ),
-                          fit: BoxFit.cover,
-                        )
-                      : null,
-                ),
-                child: _isUploadingCover
-                    ? const Center(
-                        child: CircularProgressIndicator(color: AppColors.primary),
-                      )
-                    : _coverImageUrl == null
-                        ? Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.add_a_photo, size: 36, color: AppColors.textMuted),
-                              const SizedBox(height: 8),
-                              Text('Tap to upload cover image',
-                                  style: AppTextStyles.bodySmall.copyWith(color: AppColors.textMuted)),
-                            ],
-                          )
-                        : Align(
-                            alignment: Alignment.bottomRight,
-                            child: Container(
-                              margin: const EdgeInsets.all(8),
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: AppColors.primary.withValues(alpha: 0.85),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(Icons.camera_alt, size: 18, color: AppColors.white),
-                            ),
-                          ),
-              ),
-            ),
-            const SizedBox(height: 20),
             AppTextField(
               controller: _nameController,
               label: 'Salon Name *',
@@ -606,46 +542,40 @@ class _CreateSalonScreenState extends State<CreateSalonScreen> {
               maxLength: 6,
             ),
             const SizedBox(height: 20),
-            // Auto-detect location button
-            OutlinedButton.icon(
-              onPressed: _detectLocation,
-              icon: const Icon(Icons.my_location, size: 18),
-              label: const Text('Auto-detect Location'),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
-                ),
+            // Share Location button
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: _latitude != null ? AppColors.successLight : AppColors.softSurface,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: _latitude != null ? AppColors.success : AppColors.border),
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: AppTextField(
-                    controller: _latitudeController,
-                    label: 'Latitude',
-                    hint: 'e.g. 23.0225',
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: AppTextField(
-                    controller: _longitudeController,
-                    label: 'Longitude',
-                    hint: 'e.g. 72.5714',
-                    keyboardType:
-                        const TextInputType.numberWithOptions(decimal: true),
-                  ),
-                ),
-              ],
+              child: Column(
+                children: [
+                  if (_latitude != null) ...[
+                    const Icon(Icons.check_circle, color: AppColors.success, size: 32),
+                    const SizedBox(height: 8),
+                    const Text('Location shared', style: TextStyle(color: AppColors.success, fontWeight: FontWeight.w600)),
+                  ] else ...[
+                    ElevatedButton.icon(
+                      onPressed: _isDetectingLocation ? null : _detectLocation,
+                      icon: _isDetectingLocation
+                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                          : const Icon(Icons.my_location),
+                      label: Text(_isDetectingLocation ? 'Detecting...' : 'Share My Location'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text('Tap to share your salon\'s location', style: AppTextStyles.caption),
+                  ],
+                ],
+              ),
             ),
           ],
         ),
@@ -653,13 +583,35 @@ class _CreateSalonScreenState extends State<CreateSalonScreen> {
     );
   }
 
-  void _detectLocation() {
-    // Placeholder for location detection
-    // In production, use geolocator package
-    SnackbarUtils.showInfo(
-      context,
-      'Location detection coming soon. Please enter coordinates manually.',
-    );
+  Future<void> _detectLocation() async {
+    setState(() => _isDetectingLocation = true);
+    try {
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          if (mounted) SnackbarUtils.showError(context, 'Location permission denied');
+          setState(() => _isDetectingLocation = false);
+          return;
+        }
+      }
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) SnackbarUtils.showError(context, 'Location permission permanently denied. Enable in settings.');
+        setState(() => _isDetectingLocation = false);
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+      setState(() {
+        _latitude = position.latitude;
+        _longitude = position.longitude;
+        _isDetectingLocation = false;
+      });
+      if (mounted) SnackbarUtils.showSuccess(context, 'Location detected successfully');
+    } catch (e) {
+      setState(() => _isDetectingLocation = false);
+      if (mounted) SnackbarUtils.showError(context, 'Could not detect location');
+    }
   }
 
   // ─── Step 3: Settings ───────────────────────────────────────────────
@@ -667,7 +619,7 @@ class _CreateSalonScreenState extends State<CreateSalonScreen> {
   Step _buildStep3() {
     return Step(
       title: const Text('Settings', style: AppTextStyles.labelLarge),
-      subtitle: const Text('Commission, policies & amenities'),
+      subtitle: const Text('Policies & amenities'),
       isActive: _currentStep >= 2,
       state: StepState.indexed,
       content: Form(
@@ -676,33 +628,6 @@ class _CreateSalonScreenState extends State<CreateSalonScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 4),
-            AppTextField(
-              controller: _commissionController,
-              label: 'Commission Percentage',
-              hint: 'Default: 20%',
-              prefixIcon: Icons.percent,
-              keyboardType: TextInputType.number,
-              maxLength: 3,
-              validator: (value) {
-                if (value != null && value.isNotEmpty) {
-                  final val = int.tryParse(value);
-                  if (val == null || val < 0 || val > 100) {
-                    return 'Enter a value between 0 and 100';
-                  }
-                }
-                return null;
-              },
-            ),
-            const SizedBox(height: 16),
-            AppTextField(
-              controller: _advanceTimeController,
-              label: 'Booking Advance Time (minutes)',
-              hint: 'Minimum time before a booking',
-              prefixIcon: Icons.schedule,
-              keyboardType: TextInputType.number,
-              maxLength: 4,
-            ),
-            const SizedBox(height: 16),
             AppTextField(
               controller: _cancellationPolicyController,
               label: 'Cancellation Policy',
