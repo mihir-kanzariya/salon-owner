@@ -10,6 +10,7 @@ class SalonProvider extends ChangeNotifier {
   Map<String, dynamic>? _salonData;
 
   String? get salonId => _salonId;
+  String? get salonName => _salonData?['name']?.toString();
   String? get myRole => _myRole;
   String? get memberId => _memberId;
   bool get loaded => _loaded;

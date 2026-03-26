@@ -41,10 +41,12 @@ class ApiConfig {
   static String linkedAccount(String salonId) => '/salons/$salonId/onboarding/linked-account';
   static String refreshKycStatus(String salonId) => '/salons/$salonId/onboarding/linked-account/refresh';
 
-  // Settlement
+  // Settlement & Earnings
   static String salonEarnings(String salonId) => '/payments/salon/$salonId/earnings';
   static String salonWithdrawals(String salonId) => '/payments/salon/$salonId/withdrawals';
   static String requestWithdrawal(String salonId) => '/payments/salon/$salonId/withdraw';
+  static String salonSettlements(String salonId) => '/payments/salon/$salonId/settlements';
+  static String incentiveProgress(String salonId) => '/payments/salon/$salonId/incentive-progress';
 
   // Reviews
   static const String reviews = '/reviews';

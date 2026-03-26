@@ -79,14 +79,10 @@ class _PhoneScreenState extends State<PhoneScreen> {
       if (provider.state == AuthState.profileIncomplete) {
         Navigator.pushReplacementNamed(context, '/profile-setup');
       } else {
-        final role = provider.user?.role ?? 'customer';
-        if (role == 'salon_user') {
-          await context.read<SalonProvider>().loadSalonData();
-          if (!mounted) return;
-          Navigator.pushReplacementNamed(context, '/salon-home');
-        } else {
-          Navigator.pushReplacementNamed(context, '/home');
-        }
+        // Salon owner app — always go to salon dashboard
+        await context.read<SalonProvider>().loadSalonData();
+        if (!mounted) return;
+        Navigator.pushReplacementNamed(context, '/salon-home');
       }
     } else {
       SnackbarUtils.showError(context, provider.error);

@@ -6,20 +6,13 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'core/theme/app_theme.dart';
 import 'core/utils/storage_service.dart';
 import 'features/auth/presentation/providers/auth_provider.dart';
-import 'features/consumer/home/presentation/providers/home_provider.dart';
 import 'features/salon/providers/salon_provider.dart';
 import 'features/auth/presentation/screens/phone_screen.dart';
 import 'features/auth/presentation/screens/otp_screen.dart';
 import 'features/auth/presentation/screens/profile_setup_screen.dart';
 import 'features/splash/presentation/screens/splash_screen.dart';
-import 'features/consumer/salon_detail/presentation/screens/salon_detail_screen.dart';
-import 'features/consumer/booking/presentation/screens/booking_screen.dart';
 import 'features/notifications/presentation/screens/notifications_screen.dart';
 import 'features/reviews/presentation/screens/reviews_screen.dart';
-import 'features/reviews/presentation/screens/submit_review_screen.dart';
-import 'features/consumer/consumer_shell.dart';
-import 'features/consumer/booking_detail/presentation/screens/booking_detail_screen.dart';
-import 'features/consumer/booking/presentation/screens/booking_success_screen.dart';
 // Salon owner imports
 import 'features/salon/salon_shell.dart';
 import 'features/salon/profile/presentation/screens/create_salon_screen.dart';
@@ -31,13 +24,10 @@ import 'features/salon/earnings/presentation/screens/earnings_screen.dart';
 import 'features/salon/earnings/presentation/screens/withdrawal_screen.dart';
 import 'features/salon/earnings/presentation/screens/transactions_screen.dart';
 import 'features/salon/onboarding/presentation/screens/payment_setup_screen.dart';
-import 'features/consumer/payment/presentation/screens/payment_screen.dart';
-import 'features/consumer/favorites/presentation/screens/favorites_screen.dart';
-import 'features/consumer/search/presentation/screens/search_screen.dart';
-import 'features/consumer/profile/presentation/screens/edit_profile_screen.dart';
 import 'features/salon/profile/presentation/screens/operating_hours_screen.dart';
 import 'features/salon/profile/presentation/screens/gallery_screen.dart';
 import 'features/salon/profile/presentation/screens/amenities_screen.dart';
+import 'features/salon/incentive/presentation/screens/incentive_screen.dart';
 import 'features/chat/presentation/screens/chat_list_screen.dart';
 import 'services/supabase_chat_service.dart';
 import 'services/notification_service.dart';
@@ -69,41 +59,32 @@ void main() async {
         await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
       }
       debugPrint('[Firebase] Initialized successfully');
-
-      // Setup local notifications early so the channel exists for background messages
       await setupLocalNotifications();
-
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
     } catch (e) {
       debugPrint('[Firebase] Init error: $e');
     }
   }
 
-  // Initialize connectivity monitoring
   await ConnectivityService().init();
-
-  // Initialize Supabase from backend config (non-blocking — will retry in splash)
   SupabaseChatService().initFromBackend();
-
-  // Initialize deep link handling
   DeepLinkService().init();
 
-  runApp(const SaloonApp());
+  runApp(const SaloonBusinessApp());
 }
 
-class SaloonApp extends StatelessWidget {
-  const SaloonApp({super.key});
+class SaloonBusinessApp extends StatelessWidget {
+  const SaloonBusinessApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
-        ChangeNotifierProvider(create: (_) => HomeProvider()),
         ChangeNotifierProvider(create: (_) => SalonProvider()),
       ],
       child: MaterialApp(
-        title: 'Saloon',
+        title: 'Saloon Business',
         navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,
@@ -118,7 +99,7 @@ class SaloonApp extends StatelessWidget {
 
   Route<dynamic>? _onGenerateRoute(RouteSettings settings) {
     switch (settings.name) {
-      // Common routes
+      // Auth routes
       case '/':
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case '/phone':
@@ -127,6 +108,8 @@ class SaloonApp extends StatelessWidget {
         return SlidePageRoute(child: const OtpScreen());
       case '/profile-setup':
         return SlidePageRoute(child: const ProfileSetupScreen());
+
+      // Common routes
       case '/notifications':
         return SlidePageRoute(child: const NotificationsScreen());
       case '/reviews':
@@ -143,65 +126,8 @@ class SaloonApp extends StatelessWidget {
         if (salonId.isEmpty) return _notFoundRoute();
         return SlidePageRoute(child: ReviewsScreen(salonId: salonId));
 
-      // Consumer routes
-      case '/home':
-        return SlidePageRoute(child: const ConsumerShell());
-      case '/salon-detail':
-        final salonId = settings.arguments as String? ?? '';
-        if (salonId.isEmpty) return _notFoundRoute();
-        return SlidePageRoute(child: SalonDetailScreen(salonId: salonId));
-      case '/booking':
-        final args = settings.arguments as Map<String, dynamic>?;
-        if (args == null) return _notFoundRoute();
-        return SlidePageRoute(
-          child: BookingScreen(
-            salonId: args['salon_id'],
-            serviceIds: List<String>.from(args['service_ids']),
-            totalDuration: args['total_duration'],
-            totalPrice: args['total_price'],
-            salonName: args['salon_name'] ?? '',
-            members: args['members'] ?? [],
-          ),
-        );
-
-      case '/booking-success':
-        final args = settings.arguments as Map<String, dynamic>?;
-        if (args == null) return _notFoundRoute();
-        return SlidePageRoute(
-          child: BookingSuccessScreen(
-            bookingId: args['booking_id'],
-            salonName: args['salon_name'] ?? '',
-            date: args['date'] ?? '',
-            time: args['time'] ?? '',
-            stylistName: args['stylist_name'] ?? 'Any Stylist',
-            totalPrice: (args['total_price'] as num?)?.toDouble() ?? 0,
-            serviceCount: args['service_count'] ?? 0,
-          ),
-        );
-      case '/booking-detail':
-        final bookingId = settings.arguments as String? ?? '';
-        if (bookingId.isEmpty) return _notFoundRoute();
-        return SlidePageRoute(child: BookingDetailScreen(bookingId: bookingId));
-      case '/submit-review':
-        final args = settings.arguments as Map<String, dynamic>?;
-        if (args == null) return _notFoundRoute();
-        return SlidePageRoute(
-          child: SubmitReviewScreen(
-            bookingId: args['booking_id'],
-            salonId: args['salon_id'],
-            salonName: args['salon_name'],
-            stylistId: args['stylist_id'],
-          ),
-        );
-
-      case '/favorites':
-        return SlidePageRoute(child: const FavoritesScreen());
-      case '/search':
-        return SlidePageRoute(child: const SearchScreen());
-      case '/edit-profile':
-        return SlidePageRoute(child: const EditProfileScreen());
-
       // Salon owner routes
+      case '/home': // Redirect /home to salon-home for this app
       case '/salon-home':
         return SlidePageRoute(child: const SalonShell());
       case '/salon/create':
@@ -285,19 +211,10 @@ class SaloonApp extends StatelessWidget {
         final salonId = settings.arguments as String? ?? '';
         if (salonId.isEmpty) return _notFoundRoute();
         return SlidePageRoute(child: PaymentSetupScreen(salonId: salonId));
-
-      // Payment routes
-      case '/payment':
-        final args = settings.arguments as Map<String, dynamic>?;
-        if (args == null) return _notFoundRoute();
-        return SlidePageRoute(
-          child: PaymentScreen(
-            bookingId: args['booking_id'],
-            amount: (args['amount'] as num).toDouble(),
-            salonName: args['salon_name'] ?? 'Salon',
-            paymentType: args['payment_type'] ?? 'full',
-          ),
-        );
+      case '/salon/incentive':
+        final salonId = settings.arguments as String? ?? '';
+        if (salonId.isEmpty) return _notFoundRoute();
+        return SlidePageRoute(child: IncentiveScreen(salonId: salonId));
 
       default:
         return _notFoundRoute();

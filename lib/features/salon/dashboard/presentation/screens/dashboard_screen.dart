@@ -1,16 +1,19 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../../../core/constants/app_colors.dart';
 import '../../../../../core/constants/app_text_styles.dart';
 import '../../../../../core/utils/error_handler.dart';
-import '../../../../../core/widgets/loading_widget.dart';
 import '../../../../../core/widgets/skeletons/skeleton_layouts.dart';
 import '../../../../../services/api_service.dart';
 import '../../../../../services/notification_service.dart';
 import '../../../../../config/api_config.dart';
 import '../../../salon_shell.dart';
 import '../../../providers/salon_provider.dart';
+import '../../widgets/kyc_banner.dart';
+import '../../widgets/weekly_earnings_card.dart';
+import '../../widgets/incentive_progress.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -26,6 +29,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
   String? _activeSalonId;
   StreamSubscription<int>? _unreadSub;
   int _unreadCount = 0;
+
+  // Earnings data
+  double _weekRevenue = 0;
+  double _weekCommission = 0;
+  double _weekNet = 0;
+  int _weekBookings = 0;
+
+  // Incentive data
+  int _monthBookings = 0;
+  int _daysRemaining = 0;
+
+  // KYC status
+  String _kycStatus = 'not_started';
 
   @override
   void initState() {
@@ -69,6 +85,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
           queryParams: bookingParams,
         );
         _todayBookings = bookingsRes['data'] ?? [];
+
+        // Load salon details for KYC status
+        try {
+          final salonRes = await _api.get('${ApiConfig.salonDetail}/$_activeSalonId');
+          _kycStatus = salonRes['data']?['kyc_status'] ?? 'not_started';
+        } catch (_) {}
+
+        // Load earnings summary (this week)
+        try {
+          final now = DateTime.now();
+          final weekStart = now.subtract(Duration(days: now.weekday - 1));
+          final earningsRes = await _api.get(
+            ApiConfig.salonEarnings(_activeSalonId!),
+            queryParams: {'from': DateFormat('yyyy-MM-dd').format(weekStart)},
+          );
+          final summary = earningsRes['data']?['summary'];
+          if (summary != null) {
+            _weekRevenue = double.tryParse(summary['total_revenue']?.toString() ?? '0') ?? 0;
+            _weekCommission = double.tryParse(summary['total_commission']?.toString() ?? '0') ?? 0;
+            _weekNet = double.tryParse(summary['total_net']?.toString() ?? '0') ?? 0;
+            _weekBookings = int.tryParse(summary['total_bookings']?.toString() ?? '0') ?? 0;
+          }
+        } catch (_) {}
+
+        // Load monthly bookings for incentive
+        try {
+          final now = DateTime.now();
+          final monthStart = DateTime(now.year, now.month, 1);
+          final monthEnd = DateTime(now.year, now.month + 1, 0);
+          _daysRemaining = monthEnd.difference(now).inDays;
+
+          final monthBookingsRes = await _api.get(
+            '${ApiConfig.bookings}/salon/$_activeSalonId',
+            queryParams: {
+              'filter': 'past',
+              'limit': '1',
+            },
+          );
+          // Use stats for completed bookings count — approximate with today's count * days
+          // For accurate count, we use the earnings total_bookings for this month
+          final monthEarningsRes = await _api.get(
+            ApiConfig.salonEarnings(_activeSalonId!),
+            queryParams: {'from': DateFormat('yyyy-MM-dd').format(monthStart)},
+          );
+          final monthSummary = monthEarningsRes['data']?['summary'];
+          _monthBookings = int.tryParse(monthSummary?['total_bookings']?.toString() ?? '0') ?? 0;
+        } catch (_) {}
       }
 
       setState(() => _isLoading = false);
@@ -76,6 +139,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
       if (mounted) ErrorHandler.handle(context, e);
       setState(() => _isLoading = false);
     }
+  }
+
+  String _getNextPayoutDate() {
+    final now = DateTime.now();
+    // Next Wednesday
+    int daysUntilWed = (DateTime.wednesday - now.weekday) % 7;
+    if (daysUntilWed == 0) daysUntilWed = 7;
+    final nextWed = now.add(Duration(days: daysUntilWed));
+    return DateFormat('EEE, d MMM').format(nextWed);
   }
 
   @override
@@ -86,10 +158,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final sp = context.watch<SalonProvider>();
+
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Saloon Business', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            if (sp.salonName != null)
+              Text(sp.salonName!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: AppColors.textSecondary)),
+          ],
+        ),
         actions: [
           IconButton(
             icon: Stack(
@@ -102,10 +183,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     top: -4,
                     child: Container(
                       padding: const EdgeInsets.all(3),
-                      decoration: const BoxDecoration(
-                        color: AppColors.error,
-                        shape: BoxShape.circle,
-                      ),
+                      decoration: const BoxDecoration(color: AppColors.error, shape: BoxShape.circle),
                       constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
                       child: Text(
                         _unreadCount > 9 ? '9+' : '$_unreadCount',
@@ -133,6 +211,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // KYC Banner
+                    if (_kycStatus != 'verified' && _activeSalonId != null) ...[
+                      KycBanner(kycStatus: _kycStatus, salonId: _activeSalonId!),
+                      const SizedBox(height: 16),
+                    ],
+
                     // Stats Grid
                     const Text('Today\'s Overview', style: AppTextStyles.h3),
                     const SizedBox(height: 12),
@@ -144,194 +228,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
-                        _StatCard(
-                          title: 'Today\'s Bookings',
-                          value: '${_stats['today_bookings'] ?? _todayBookings.length}',
-                          icon: Icons.calendar_today,
-                          color: AppColors.primary,
-                        ),
-                        _StatCard(
-                          title: 'Today\'s Revenue',
-                          value: '\u20B9${_stats['today_revenue'] ?? 0}',
-                          icon: Icons.currency_rupee,
-                          color: AppColors.success,
-                        ),
-                        _StatCard(
-                          title: 'Pending',
-                          value: '${_stats['pending_bookings'] ?? 0}',
-                          icon: Icons.pending_actions,
-                          color: AppColors.accent,
-                        ),
-                        _StatCard(
-                          title: 'Rating',
-                          value: (double.tryParse(_stats['rating_avg']?.toString() ?? '') ?? 0.0).toStringAsFixed(1),
-                          icon: Icons.star,
-                          color: AppColors.ratingStar,
-                        ),
+                        _StatCard(title: 'Bookings', value: '${_stats['today_bookings'] ?? _todayBookings.length}', icon: Icons.calendar_today, color: AppColors.primary),
+                        _StatCard(title: 'Revenue', value: '\u20B9${_stats['today_revenue'] ?? 0}', icon: Icons.currency_rupee, color: AppColors.success),
+                        _StatCard(title: 'Pending', value: '${_stats['pending_bookings'] ?? 0}', icon: Icons.pending_actions, color: AppColors.accent),
+                        _StatCard(title: 'Rating', value: (double.tryParse(_stats['rating_avg']?.toString() ?? '') ?? 0.0).toStringAsFixed(1), icon: Icons.star, color: AppColors.ratingStar),
                       ],
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 20),
+
+                    // Weekly Earnings Card
+                    if (!sp.isStylist) ...[
+                      WeeklyEarningsCard(
+                        revenue: _weekRevenue,
+                        commission: _weekCommission,
+                        net: _weekNet,
+                        bookingCount: _weekBookings,
+                        nextPayoutDate: _getNextPayoutDate(),
+                        onViewEarnings: () => Navigator.pushNamed(context, '/salon/earnings', arguments: _activeSalonId),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
+                    // Incentive Progress
+                    if (!sp.isStaffRole) ...[
+                      IncentiveProgress(
+                        currentBookings: _monthBookings,
+                        threshold: 150,
+                        daysRemaining: _daysRemaining,
+                        bonusAmount: 10000,
+                      ),
+                      const SizedBox(height: 20),
+                    ],
 
                     // Quick Actions
                     const Text('Quick Actions', style: AppTextStyles.h3),
                     const SizedBox(height: 12),
-                    Builder(
-                      builder: (context) {
-                        final sp = context.read<SalonProvider>();
-                        if (sp.isStylist) {
-                          return Row(
-                            children: [
-                              Expanded(
-                                child: _QuickAction(
-                                  icon: Icons.schedule_outlined,
-                                  label: 'Availability',
-                                  onTap: () {
-                                    if (sp.memberId != null) {
-                                      Navigator.pushNamed(context, '/salon/stylist-availability', arguments: sp.memberId);
-                                    }
-                                  },
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _QuickAction(
-                                  icon: Icons.account_balance_wallet_outlined,
-                                  label: 'Earnings',
-                                  onTap: () => Navigator.pushNamed(context, '/salon/earnings', arguments: {
-                                    'salon_id': _activeSalonId,
-                                    'stylist_member_id': sp.memberId,
-                                  }),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _QuickAction(
-                                  icon: Icons.chat_outlined,
-                                  label: 'Chat',
-                                  onTap: () => SalonShell.switchToTab(3),
-                                ),
-                              ),
-                            ],
-                          );
-                        }
-                        if (sp.isReceptionist) {
-                          return Row(
-                            children: [
-                              Expanded(
-                                child: _QuickAction(
-                                  icon: Icons.calendar_today_outlined,
-                                  label: 'Bookings',
-                                  onTap: () => SalonShell.switchToTab(1),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _QuickAction(
-                                  icon: Icons.account_balance_wallet_outlined,
-                                  label: 'Earnings',
-                                  onTap: () => Navigator.pushNamed(context, '/salon/earnings', arguments: _activeSalonId),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _QuickAction(
-                                  icon: Icons.chat_outlined,
-                                  label: 'Chat',
-                                  onTap: () => SalonShell.switchToTab(3),
-                                ),
-                              ),
-                            ],
-                          );
-                        }
-                        return Row(
-                          children: [
-                            Expanded(
-                              child: _QuickAction(
-                                icon: Icons.add_circle_outline,
-                                label: 'Add Service',
-                                onTap: () => Navigator.pushNamed(context, '/salon/add-service', arguments: _activeSalonId),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _QuickAction(
-                                icon: Icons.person_add_outlined,
-                                label: 'Add Stylist',
-                                onTap: () => Navigator.pushNamed(context, '/salon/add-stylist', arguments: _activeSalonId),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: _QuickAction(
-                                icon: Icons.account_balance_wallet_outlined,
-                                label: 'Earnings',
-                                onTap: () => Navigator.pushNamed(context, '/salon/earnings', arguments: _activeSalonId),
-                              ),
-                            ),
-                          ],
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 24),
+                    _buildQuickActions(sp),
+                    const SizedBox(height: 20),
 
                     // Today's Bookings
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text('Today\'s Bookings', style: AppTextStyles.h3),
-                        TextButton(
-                          onPressed: () => SalonShell.switchToTab(1),
-                          child: const Text('View All'),
-                        ),
+                        TextButton(onPressed: () => SalonShell.switchToTab(1), child: const Text('View All')),
                       ],
                     ),
                     const SizedBox(height: 8),
-                    if (_todayBookings.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          color: AppColors.cardBackground,
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(Icons.event_available, size: 48, color: AppColors.textMuted),
-                            const SizedBox(height: 8),
-                            const Text('No bookings today', style: AppTextStyles.bodyMedium),
-                          ],
-                        ),
-                      )
-                    else
-                      ...List.generate(_todayBookings.length, (index) {
-                        final booking = _todayBookings[index];
-                        final customer = booking['customer'];
-                        return Card(
-                          margin: const EdgeInsets.only(bottom: 8),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: AppColors.primaryLight,
-                              child: Text(
-                                (customer?['name'] ?? 'C')[0].toUpperCase(),
-                                style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.w600),
-                              ),
-                            ),
-                            title: Text(customer?['name'] ?? 'Customer', style: AppTextStyles.labelLarge),
-                            subtitle: Text('${booking['start_time']} - ${booking['end_time']}', style: AppTextStyles.caption),
-                            trailing: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: _getStatusColor(booking['status']).withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                _formatStatus(booking['status'] ?? ''),
-                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _getStatusColor(booking['status'])),
-                              ),
-                            ),
-                          ),
-                        );
-                      }),
+                    _buildTodayBookings(),
                   ],
                 ),
               ),
@@ -339,8 +283,95 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
+  Widget _buildQuickActions(SalonProvider sp) {
+    if (sp.isStylist) {
+      return Row(
+        children: [
+          Expanded(child: _QuickAction(icon: Icons.schedule_outlined, label: 'Availability', onTap: () {
+            if (sp.memberId != null) Navigator.pushNamed(context, '/salon/stylist-availability', arguments: sp.memberId);
+          })),
+          const SizedBox(width: 12),
+          Expanded(child: _QuickAction(icon: Icons.account_balance_wallet_outlined, label: 'Earnings', onTap: () {
+            Navigator.pushNamed(context, '/salon/earnings', arguments: {'salon_id': _activeSalonId, 'stylist_member_id': sp.memberId});
+          })),
+          const SizedBox(width: 12),
+          Expanded(child: _QuickAction(icon: Icons.chat_outlined, label: 'Chat', onTap: () => SalonShell.switchToTab(3))),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Expanded(child: _QuickAction(icon: Icons.add_circle_outline, label: 'Add Service', onTap: () => Navigator.pushNamed(context, '/salon/add-service', arguments: _activeSalonId))),
+        const SizedBox(width: 12),
+        Expanded(child: _QuickAction(icon: Icons.person_add_outlined, label: 'Add Stylist', onTap: () => Navigator.pushNamed(context, '/salon/add-stylist', arguments: _activeSalonId))),
+        const SizedBox(width: 12),
+        Expanded(child: _QuickAction(icon: Icons.account_balance_wallet_outlined, label: 'Earnings', onTap: () => Navigator.pushNamed(context, '/salon/earnings', arguments: _activeSalonId))),
+        const SizedBox(width: 12),
+        Expanded(child: _QuickAction(icon: Icons.access_time, label: 'Hours', onTap: () => Navigator.pushNamed(context, '/salon/hours', arguments: _activeSalonId))),
+      ],
+    );
+  }
+
+  Widget _buildTodayBookings() {
+    if (_todayBookings.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(color: AppColors.cardBackground, borderRadius: BorderRadius.circular(12)),
+        child: Column(
+          children: [
+            Icon(Icons.event_available, size: 48, color: AppColors.textMuted),
+            const SizedBox(height: 8),
+            const Text('No bookings today', style: AppTextStyles.bodyMedium),
+            const SizedBox(height: 4),
+            const Text('New bookings will appear here', style: AppTextStyles.caption),
+          ],
+        ),
+      );
+    }
+    return Column(
+      children: _todayBookings.map((booking) {
+        final customer = booking['customer'];
+        final paymentStatus = booking['payment_status'] ?? 'pending';
+        return Card(
+          margin: const EdgeInsets.only(bottom: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: AppColors.primaryLight,
+              child: Text(
+                (customer?['name'] ?? 'C')[0].toUpperCase(),
+                style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.w600),
+              ),
+            ),
+            title: Text(customer?['name'] ?? 'Customer', style: AppTextStyles.labelLarge),
+            subtitle: Row(
+              children: [
+                Text('${booking['start_time']} - ${booking['end_time']}', style: AppTextStyles.caption),
+                const SizedBox(width: 8),
+                _PaymentBadge(status: paymentStatus),
+              ],
+            ),
+            trailing: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: _getStatusColor(booking['status']).withValues(alpha: 0.1),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                _formatStatus(booking['status'] ?? ''),
+                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: _getStatusColor(booking['status'])),
+              ),
+            ),
+          ),
+        );
+      }).toList(),
+    );
+  }
+
   Color _getStatusColor(String? status) {
     switch (status) {
+      case 'awaiting_payment': return AppColors.accent;
       case 'confirmed': return AppColors.primary;
       case 'in_progress': return AppColors.accent;
       case 'completed': return AppColors.success;
@@ -351,6 +382,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   String _formatStatus(String status) {
     return status.replaceAll('_', ' ').split(' ').map((w) => w.isNotEmpty ? '${w[0].toUpperCase()}${w.substring(1)}' : '').join(' ');
+  }
+}
+
+class _PaymentBadge extends StatelessWidget {
+  final String status;
+  const _PaymentBadge({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    Color color;
+    String label;
+    switch (status) {
+      case 'paid':
+        color = AppColors.success;
+        label = 'Paid';
+        break;
+      case 'token_paid':
+        color = AppColors.primary;
+        label = 'Token';
+        break;
+      case 'refunded':
+        color = Colors.blue;
+        label = 'Refunded';
+        break;
+      default:
+        color = AppColors.textMuted;
+        label = 'Unpaid';
+    }
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Text(label, style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color)),
+    );
   }
 }
 
@@ -369,9 +436,7 @@ class _StatCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2)),
-        ],
+        boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
