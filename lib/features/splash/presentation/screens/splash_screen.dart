@@ -1,3 +1,4 @@
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
@@ -83,12 +84,12 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 24),
             Text(
-              'Saloon',
+              'HeloHair',
               style: AppTextStyles.h1.copyWith(color: AppColors.white, fontSize: 36),
             ),
             const SizedBox(height: 8),
             Text(
-              'Book your style',
+              'Never wait at a salon again',
               style: AppTextStyles.bodyLarge.copyWith(color: AppColors.white.withValues(alpha: 0.8)),
             ),
           ],

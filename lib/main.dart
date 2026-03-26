@@ -70,11 +70,11 @@ void main() async {
   SupabaseChatService().initFromBackend();
   DeepLinkService().init();
 
-  runApp(const SaloonBusinessApp());
+  runApp(const HeloHairBusinessApp());
 }
 
-class SaloonBusinessApp extends StatelessWidget {
-  const SaloonBusinessApp({super.key});
+class HeloHairBusinessApp extends StatelessWidget {
+  const HeloHairBusinessApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +84,7 @@ class SaloonBusinessApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => SalonProvider()),
       ],
       child: MaterialApp(
-        title: 'Saloon Business',
+        title: 'HeloHair Business',
         navigatorKey: navigatorKey,
         debugShowCheckedModeBanner: false,
         theme: AppTheme.lightTheme,

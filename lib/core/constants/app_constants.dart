@@ -1,7 +1,7 @@
 class AppConstants {
   static const String appName = 'Saloon';
-  static const String consumerAppName = 'Saloon';
-  static const String salonAppName = 'Saloon Business';
+  static const String consumerAppName = 'HeloHair';
+  static const String salonAppName = 'HeloHair Business';
   
   static const int otpLength = 4;
   static const int otpExpirySeconds = 300;

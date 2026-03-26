@@ -168,7 +168,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text('Saloon Business', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+            const Text('HeloHair Business', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             if (sp.salonName != null)
               Text(sp.salonName!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: AppColors.textSecondary)),
           ],
