@@ -53,10 +53,15 @@ class _OtpScreenState extends State<OtpScreen> {
         if (provider.state == AuthState.profileIncomplete) {
           Navigator.pushReplacementNamed(context, '/profile-setup');
         } else {
-          // Salon owner app — always go to salon dashboard
+          // Salon owner app — load salon data, redirect appropriately
           await context.read<SalonProvider>().loadSalonData();
           if (!mounted) return;
-          Navigator.pushReplacementNamed(context, '/salon-home');
+          final salonId = context.read<SalonProvider>().salonId;
+          if (salonId == null) {
+            Navigator.pushReplacementNamed(context, '/salon/create');
+          } else {
+            Navigator.pushReplacementNamed(context, '/salon-home');
+          }
         }
       } else {
         SnackbarUtils.showError(context, provider.error);

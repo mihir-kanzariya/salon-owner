@@ -67,11 +67,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
         }
 
         // Load salon stats
-        final statsRes = await _api.get(
-          '${ApiConfig.salonDetail}/$_activeSalonId/stats',
-          queryParams: queryParams.isNotEmpty ? queryParams : null,
-        );
-        _stats = statsRes['data'] ?? {};
+        try {
+          final statsRes = await _api.get(
+            '${ApiConfig.salonDetail}/$_activeSalonId/stats',
+            queryParams: queryParams.isNotEmpty ? queryParams : null,
+          );
+          _stats = statsRes['data'] ?? {};
+        } catch (_) {}
 
         // Load today's bookings
         final bookingParams = <String, dynamic>{
@@ -116,7 +118,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           final monthEnd = DateTime(now.year, now.month + 1, 0);
           _daysRemaining = monthEnd.difference(now).inDays;
 
-          final monthBookingsRes = await _api.get(
+          await _api.get(
             '${ApiConfig.bookings}/salon/$_activeSalonId',
             queryParams: {
               'filter': 'past',
@@ -340,7 +342,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             leading: CircleAvatar(
               backgroundColor: AppColors.primaryLight,
               child: Text(
-                (customer?['name'] ?? 'C')[0].toUpperCase(),
+                ((customer?['name'] as String?)?.isNotEmpty == true ? customer['name'][0] : 'C').toUpperCase(),
                 style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.w600),
               ),
             ),

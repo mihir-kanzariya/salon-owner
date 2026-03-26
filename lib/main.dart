@@ -162,7 +162,7 @@ class SaloonBusinessApp extends StatelessWidget {
             ),
           );
         }
-        return SlidePageRoute(child: const AddStylistScreen());
+        return _notFoundRoute(); // salonId required
       case '/salon/stylist-availability':
         final stylistId = settings.arguments as String? ?? '';
         if (stylistId.isEmpty) return _notFoundRoute();

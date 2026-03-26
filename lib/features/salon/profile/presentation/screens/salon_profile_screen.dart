@@ -3,7 +3,6 @@ import 'package:provider/provider.dart';
 import '../../../../../core/constants/app_colors.dart';
 import '../../../../../core/constants/app_text_styles.dart';
 import '../../../../../core/utils/error_handler.dart';
-import '../../../../../core/widgets/loading_widget.dart';
 import '../../../../../core/widgets/skeletons/skeleton_layouts.dart';
 import '../../../../../services/api_service.dart';
 import '../../../../../config/api_config.dart';

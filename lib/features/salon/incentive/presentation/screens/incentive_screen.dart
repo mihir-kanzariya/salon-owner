@@ -1,10 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import '../../../../../core/constants/app_colors.dart';
 import '../../../../../core/constants/app_text_styles.dart';
 import '../../../../../services/api_service.dart';
-import '../../../../../config/api_config.dart';
-import '../../../providers/salon_provider.dart';
 
 class IncentiveScreen extends StatefulWidget {
   final String salonId;
@@ -17,6 +14,7 @@ class IncentiveScreen extends StatefulWidget {
 class _IncentiveScreenState extends State<IncentiveScreen> {
   final ApiService _api = ApiService();
   bool _isLoading = true;
+  String? _error;
   Map<String, dynamic> _data = {};
 
   @override
@@ -27,12 +25,12 @@ class _IncentiveScreenState extends State<IncentiveScreen> {
 
   Future<void> _loadIncentiveData() async {
     try {
-      setState(() => _isLoading = true);
+      setState(() { _isLoading = true; _error = null; });
       final res = await _api.get('/payments/salon/${widget.salonId}/incentive-progress');
       _data = res['data'] ?? {};
       setState(() => _isLoading = false);
     } catch (e) {
-      setState(() => _isLoading = false);
+      setState(() { _isLoading = false; _error = 'Could not load incentive data. Pull down to retry.'; });
     }
   }
 
@@ -43,7 +41,23 @@ class _IncentiveScreenState extends State<IncentiveScreen> {
       appBar: AppBar(title: const Text('Monthly Incentive')),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
+          : _error != null
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.error_outline, size: 48, color: AppColors.textMuted),
+                        const SizedBox(height: 12),
+                        Text(_error!, style: AppTextStyles.bodyMedium, textAlign: TextAlign.center),
+                        const SizedBox(height: 16),
+                        ElevatedButton(onPressed: _loadIncentiveData, child: const Text('Retry')),
+                      ],
+                    ),
+                  ),
+                )
+              : RefreshIndicator(
               onRefresh: _loadIncentiveData,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -158,7 +172,7 @@ class _IncentiveScreenState extends State<IncentiveScreen> {
   }
 
   Widget _buildPastIncentives() {
-    final past = (_data['past_incentives'] as List?) ?? [];
+    final past = List<Map<String, dynamic>>.from((_data['past_incentives'] as List?) ?? []);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

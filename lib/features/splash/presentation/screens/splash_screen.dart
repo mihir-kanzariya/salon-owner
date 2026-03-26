@@ -42,10 +42,16 @@ class _SplashScreenState extends State<SplashScreen> {
         // Initialize notifications after successful auth — await to ensure FCM token is saved
         await NotificationService().init();
 
-        // Salon owner app — always go to salon dashboard
+        // Salon owner app — load salon data, redirect appropriately
         await context.read<SalonProvider>().loadSalonData();
         if (!mounted) return;
-        Navigator.pushReplacementNamed(context, '/salon-home');
+        final salonId = context.read<SalonProvider>().salonId;
+        if (salonId == null) {
+          // New user with no salon — go to create salon
+          Navigator.pushReplacementNamed(context, '/salon/create');
+        } else {
+          Navigator.pushReplacementNamed(context, '/salon-home');
+        }
         // Process any deep link that launched the app
         DeepLinkService().processPendingLink();
         break;

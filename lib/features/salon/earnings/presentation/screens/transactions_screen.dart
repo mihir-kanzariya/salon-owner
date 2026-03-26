@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../../../core/constants/app_colors.dart';
 import '../../../../../core/constants/app_text_styles.dart';
-import '../../../../../core/widgets/loading_widget.dart';
 import '../../../../../core/widgets/skeletons/skeleton_layouts.dart';
 import '../../../../../core/widgets/empty_state_widget.dart';
 import '../../../../../services/api_service.dart';

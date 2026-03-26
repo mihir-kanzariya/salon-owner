@@ -18,9 +18,9 @@ class IncentiveProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final progress = (currentBookings / threshold).clamp(0.0, 1.0);
-    final remaining = threshold - currentBookings;
-    final isEligible = currentBookings >= threshold;
+    final progress = threshold > 0 ? (currentBookings / threshold).clamp(0.0, 1.0) : 0.0;
+    final remaining = (threshold - currentBookings).clamp(0, threshold);
+    final isEligible = currentBookings >= threshold && threshold > 0;
 
     return Container(
       width: double.infinity,
