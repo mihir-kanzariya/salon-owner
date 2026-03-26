@@ -8,6 +8,7 @@ import '../../../../../services/api_service.dart';
 import '../../../../../config/api_config.dart';
 import '../../../../auth/presentation/providers/auth_provider.dart';
 import '../../../providers/salon_provider.dart';
+import '../../../salon_shell.dart';
 
 class SalonProfileScreen extends StatefulWidget {
   const SalonProfileScreen({super.key});
@@ -355,16 +356,59 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
             },
           ),
           _ProfileMenuTile(
-            icon: Icons.account_balance_wallet_outlined,
-            title: 'Earnings',
-            subtitle: 'View revenue and transactions',
+            icon: Icons.payment_outlined,
+            title: 'Payment Setup',
+            subtitle: 'KYC, bank account & payout settings',
             onTap: () {
-              Navigator.pushNamed(
-                context,
-                '/salon/earnings',
-                arguments: _salonId,
-              );
+              if (_salonId != null) {
+                Navigator.pushNamed(context, '/salon/payment-setup', arguments: _salonId);
+              }
             },
+          ),
+          _ProfileMenuTile(
+            icon: Icons.account_balance_wallet_outlined,
+            title: 'Earnings & Payouts',
+            subtitle: 'View revenue, commission & settlements',
+            onTap: () {
+              Navigator.pushNamed(context, '/salon/earnings', arguments: _salonId);
+            },
+          ),
+          _ProfileMenuTile(
+            icon: Icons.account_balance_outlined,
+            title: 'Request Withdrawal',
+            subtitle: 'Transfer earnings to your bank',
+            onTap: () {
+              Navigator.pushNamed(context, '/salon/withdraw', arguments: {
+                'salon_id': _salonId,
+                'available_balance': 0.0, // Will be loaded on screen
+              });
+            },
+          ),
+          _ProfileMenuTile(
+            icon: Icons.receipt_long_outlined,
+            title: 'Transaction History',
+            subtitle: 'All payments & settlement records',
+            onTap: () {
+              if (_salonId != null) {
+                Navigator.pushNamed(context, '/salon/transactions', arguments: _salonId);
+              }
+            },
+          ),
+          _ProfileMenuTile(
+            icon: Icons.emoji_events_outlined,
+            title: 'Monthly Incentive',
+            subtitle: 'Track progress towards \u20B910,000 bonus',
+            onTap: () {
+              if (_salonId != null) {
+                Navigator.pushNamed(context, '/salon/incentive', arguments: _salonId);
+              }
+            },
+          ),
+          _ProfileMenuTile(
+            icon: Icons.people_outline,
+            title: 'Team Members',
+            subtitle: 'Manage stylists & staff',
+            onTap: () => SalonShell.switchToTab(3),
           ),
           _ProfileMenuTile(
             icon: Icons.star_outline,
@@ -372,11 +416,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
             subtitle: 'See what customers are saying',
             onTap: () {
               if (_salonId != null) {
-                Navigator.pushNamed(
-                  context,
-                  '/reviews',
-                  arguments: _salonId,
-                );
+                Navigator.pushNamed(context, '/reviews', arguments: _salonId);
               }
             },
           ),
