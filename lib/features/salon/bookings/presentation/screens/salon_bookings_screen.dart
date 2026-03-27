@@ -498,7 +498,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
                   IconButton(
                     icon: const Icon(Icons.notifications_active_outlined, size: 20),
                     color: AppColors.accent,
-                    tooltip: 'Notify Customer',
+                    tooltip: context.watch<LocaleProvider>().tr('notify_customer'),
                     padding: EdgeInsets.zero,
                     constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
                     onPressed: () => _notifyCustomer(bookingId),

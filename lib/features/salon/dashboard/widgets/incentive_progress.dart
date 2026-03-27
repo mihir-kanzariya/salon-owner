@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/i18n/locale_provider.dart';
 
 class IncentiveProgress extends StatelessWidget {
   final int currentBookings;
@@ -18,6 +20,7 @@ class IncentiveProgress extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.watch<LocaleProvider>();
     final progress = threshold > 0 ? (currentBookings / threshold).clamp(0.0, 1.0) : 0.0;
     final remaining = (threshold - currentBookings).clamp(0, threshold);
     final isEligible = currentBookings >= threshold && threshold > 0;
@@ -55,11 +58,11 @@ class IncentiveProgress extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('Monthly Incentive', style: AppTextStyles.h4),
+                    Text(l.tr('monthly_incentive'), style: AppTextStyles.h4),
                     Text(
                       isEligible
                           ? 'You\'ve earned \u20B9${bonusAmount.toStringAsFixed(0)} bonus!'
-                          : '$remaining more bookings to earn \u20B9${bonusAmount.toStringAsFixed(0)}',
+                          : '$remaining ${l.tr('incentive_msg')} \u20B9${bonusAmount.toStringAsFixed(0)}',
                       style: TextStyle(
                         fontSize: 12,
                         color: isEligible ? AppColors.success : AppColors.textSecondary,
@@ -88,11 +91,11 @@ class IncentiveProgress extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                '$currentBookings / $threshold bookings',
+                '$currentBookings / $threshold ${l.tr('bookings').toLowerCase()}',
                 style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
               ),
               Text(
-                '$daysRemaining days left',
+                '$daysRemaining ${l.tr('days_left')}',
                 style: const TextStyle(fontSize: 12, color: AppColors.textMuted),
               ),
             ],

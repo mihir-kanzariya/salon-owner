@@ -96,7 +96,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
         setState(() => _isComplete = true);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Payment setup submitted! KYC verification in progress.'), backgroundColor: Colors.green),
+            SnackBar(content: Text(context.read<LocaleProvider>().tr('payment_setup_success')), backgroundColor: Colors.green),
           );
         }
       } else {
@@ -168,6 +168,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
   }
 
   Widget _buildSetupForm() {
+    final l = context.watch<LocaleProvider>();
     return Form(
       key: _formKey,
       child: Stepper(
@@ -189,30 +190,30 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
               children: [
                 ElevatedButton(
                   onPressed: details.onStepContinue,
-                  child: Text(_currentStep == 2 ? 'Submit' : 'Continue'),
+                  child: Text(_currentStep == 2 ? l.tr('submit') : l.tr('continue_text')),
                 ),
                 const SizedBox(width: 12),
                 if (_currentStep > 0)
-                  TextButton(onPressed: details.onStepCancel, child: const Text('Back')),
+                  TextButton(onPressed: details.onStepCancel, child: Text(l.tr('back'))),
               ],
             ),
           );
         },
         steps: [
           Step(
-            title: const Text('Business Details'),
+            title: Text(l.tr('business_details')),
             isActive: _currentStep >= 0,
             content: Column(
               children: [
                 TextFormField(
                   controller: _businessNameController,
-                  decoration: const InputDecoration(labelText: 'Legal Business Name'),
+                  decoration: InputDecoration(labelText: l.tr('legal_business_name')),
                   validator: (v) => (v == null || v.length < 3) ? 'Min 3 characters' : null,
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: _businessType,
-                  decoration: const InputDecoration(labelText: 'Business Type'),
+                  decoration: InputDecoration(labelText: l.tr('business_type')),
                   items: const [
                     DropdownMenuItem(value: 'individual', child: Text('Individual')),
                     DropdownMenuItem(value: 'proprietorship', child: Text('Proprietorship')),
@@ -225,20 +226,20 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _contactNameController,
-                  decoration: const InputDecoration(labelText: 'Contact Person Name'),
+                  decoration: InputDecoration(labelText: l.tr('contact_name')),
                   validator: (v) => (v == null || v.length < 2) ? 'Required' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _contactEmailController,
-                  decoration: const InputDecoration(labelText: 'Email'),
+                  decoration: InputDecoration(labelText: l.tr('email')),
                   keyboardType: TextInputType.emailAddress,
                   validator: (v) => (v == null || !v.contains('@')) ? 'Valid email required' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _contactPhoneController,
-                  decoration: const InputDecoration(labelText: 'Phone (10 digits)'),
+                  decoration: InputDecoration(labelText: l.tr('phone_number')),
                   keyboardType: TextInputType.phone,
                   maxLength: 10,
                   validator: (v) => (v == null || !RegExp(r'^[6-9]\d{9}$').hasMatch(v)) ? 'Valid 10-digit phone' : null,
@@ -247,13 +248,13 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
             ),
           ),
           Step(
-            title: const Text('KYC Details'),
+            title: Text(l.tr('kyc_details')),
             isActive: _currentStep >= 1,
             content: Column(
               children: [
                 TextFormField(
                   controller: _panController,
-                  decoration: const InputDecoration(labelText: 'PAN Number', hintText: 'ABCDE1234F'),
+                  decoration: InputDecoration(labelText: l.tr('pan_number'), hintText: 'ABCDE1234F'),
                   textCapitalization: TextCapitalization.characters,
                   maxLength: 10,
                   validator: (v) => (v == null || !RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]$').hasMatch(v.toUpperCase())) ? 'Invalid PAN format' : null,
@@ -261,7 +262,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _gstController,
-                  decoration: const InputDecoration(labelText: 'GST Number (optional)'),
+                  decoration: InputDecoration(labelText: l.tr('gst_number')),
                   textCapitalization: TextCapitalization.characters,
                   maxLength: 15,
                 ),
@@ -269,20 +270,20 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
             ),
           ),
           Step(
-            title: const Text('Bank Account'),
+            title: Text(l.tr('bank_details')),
             isActive: _currentStep >= 2,
             content: Column(
               children: [
                 TextFormField(
                   controller: _accountNumberController,
-                  decoration: const InputDecoration(labelText: 'Bank Account Number'),
+                  decoration: InputDecoration(labelText: l.tr('account_number')),
                   keyboardType: TextInputType.number,
                   validator: (v) => (v == null || v.length < 9 || v.length > 18) ? '9-18 digits required' : null,
                 ),
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _ifscController,
-                  decoration: const InputDecoration(labelText: 'IFSC Code', hintText: 'HDFC0001234'),
+                  decoration: InputDecoration(labelText: l.tr('ifsc_code'), hintText: 'HDFC0001234'),
                   textCapitalization: TextCapitalization.characters,
                   maxLength: 11,
                   validator: (v) => (v == null || !RegExp(r'^[A-Z]{4}0[A-Z0-9]{6}$').hasMatch(v.toUpperCase())) ? 'Invalid IFSC format' : null,
@@ -290,7 +291,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: _beneficiaryNameController,
-                  decoration: const InputDecoration(labelText: 'Account Holder Name'),
+                  decoration: InputDecoration(labelText: l.tr('beneficiary_name')),
                   validator: (v) => (v == null || v.length < 3) ? 'Min 3 characters' : null,
                 ),
                 if (_error != null) ...[

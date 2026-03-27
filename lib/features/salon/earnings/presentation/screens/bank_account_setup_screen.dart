@@ -159,7 +159,6 @@ class _BankAccountSetupScreenState extends State<BankAccountSetupScreen> {
                         label: l.tr('ifsc_code'),
                         hint: 'e.g. HDFC0001234',
                         prefixIcon: Icons.code,
-                        textCapitalization: TextCapitalization.characters,
                         maxLength: 11,
                         validator: (v) {
                           if (v == null || v.trim().isEmpty) return 'Required';

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_text_styles.dart';
+import '../../../../core/i18n/locale_provider.dart';
 
 class WeeklyEarningsCard extends StatelessWidget {
   final double revenue;
@@ -22,6 +24,7 @@ class WeeklyEarningsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.watch<LocaleProvider>();
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -38,10 +41,10 @@ class WeeklyEarningsCard extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text('This Week\'s Earnings', style: AppTextStyles.h4),
+              Text(l.tr('this_weeks_earnings'), style: AppTextStyles.h4),
               GestureDetector(
                 onTap: onViewEarnings,
-                child: const Text('View All', style: TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600)),
+                child: Text(l.tr('view_all'), style: const TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600)),
               ),
             ],
           ),
@@ -53,7 +56,7 @@ class WeeklyEarningsCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            'Net payout from $bookingCount bookings',
+            '${l.tr('net_payout')} from $bookingCount ${l.tr('bookings').toLowerCase()}',
             style: AppTextStyles.caption,
           ),
           const SizedBox(height: 16),
@@ -64,7 +67,7 @@ class WeeklyEarningsCard extends StatelessWidget {
             children: [
               Expanded(
                 child: _EarningDetail(
-                  label: 'Revenue',
+                  label: l.tr('revenue'),
                   value: '\u20B9${revenue.toStringAsFixed(0)}',
                   color: AppColors.textPrimary,
                 ),
@@ -72,7 +75,7 @@ class WeeklyEarningsCard extends StatelessWidget {
               Container(width: 1, height: 36, color: AppColors.border),
               Expanded(
                 child: _EarningDetail(
-                  label: 'Commission',
+                  label: l.tr('commission'),
                   value: '-\u20B9${commission.toStringAsFixed(0)}',
                   color: AppColors.error,
                 ),
@@ -80,7 +83,7 @@ class WeeklyEarningsCard extends StatelessWidget {
               Container(width: 1, height: 36, color: AppColors.border),
               Expanded(
                 child: _EarningDetail(
-                  label: 'Net',
+                  label: l.tr('net_payout'),
                   value: '\u20B9${net.toStringAsFixed(0)}',
                   color: AppColors.success,
                 ),
@@ -101,7 +104,7 @@ class WeeklyEarningsCard extends StatelessWidget {
                   const Icon(Icons.schedule, size: 16, color: AppColors.success),
                   const SizedBox(width: 8),
                   Text(
-                    'Next payout: $nextPayoutDate',
+                    '${l.tr('next_payout')}: $nextPayoutDate',
                     style: const TextStyle(fontSize: 12, color: AppColors.success, fontWeight: FontWeight.w600),
                   ),
                 ],
