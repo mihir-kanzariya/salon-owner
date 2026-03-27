@@ -80,7 +80,10 @@ class _SplashScreenState extends State<SplashScreen> {
                 color: AppColors.white,
                 borderRadius: BorderRadius.circular(24),
               ),
-              child: const Icon(Icons.content_cut, size: 48, color: AppColors.primary),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(20),
+                child: SvgPicture.asset('assets/images/helohair-logo.svg', width: 64, height: 64),
+              ),
             ),
             const SizedBox(height: 24),
             Text(

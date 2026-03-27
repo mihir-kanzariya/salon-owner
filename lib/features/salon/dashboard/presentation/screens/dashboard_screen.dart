@@ -1,3 +1,4 @@
+import '../../../../../core/widgets/language_toggle.dart';
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -174,6 +175,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ],
         ),
         actions: [
+          const LanguageToggle(),
+          const SizedBox(width: 4),
           IconButton(
             icon: Stack(
               clipBehavior: Clip.none,
