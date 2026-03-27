@@ -3,7 +3,8 @@ import 'package:provider/provider.dart';
 import '../i18n/locale_provider.dart';
 import '../constants/app_colors.dart';
 
-/// Compact language toggle button — switches between English and Gujarati
+/// Language toggle button — switches between English and Gujarati.
+/// Shows as a solid teal pill with white text — highly visible in AppBar.
 class LanguageToggle extends StatelessWidget {
   const LanguageToggle({super.key});
 
@@ -14,23 +15,22 @@ class LanguageToggle extends StatelessWidget {
         return GestureDetector(
           onTap: () => locale.toggleLocale(),
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: AppColors.primary.withValues(alpha: 0.1),
+              color: AppColors.primary,
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: AppColors.primary.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Icon(Icons.translate, size: 16, color: AppColors.primary),
+                const Icon(Icons.translate, size: 14, color: Colors.white),
                 const SizedBox(width: 4),
                 Text(
                   locale.isEnglish ? 'ગુ' : 'EN',
                   style: const TextStyle(
-                    fontSize: 12,
+                    fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primary,
+                    color: Colors.white,
                   ),
                 ),
               ],
