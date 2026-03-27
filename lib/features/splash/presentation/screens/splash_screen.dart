@@ -82,7 +82,7 @@ class _SplashScreenState extends State<SplashScreen> {
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(20),
-                child: SvgPicture.asset('assets/images/helohair-logo.svg', width: 64, height: 64),
+                child: Image.asset('assets/images/helohair-logo.png', width: 64, height: 64, fit: BoxFit.contain),
               ),
             ),
             const SizedBox(height: 24),
