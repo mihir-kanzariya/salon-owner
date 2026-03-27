@@ -1,3 +1,4 @@
+import '../../../../../core/widgets/language_toggle.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../../../core/constants/app_colors.dart';
@@ -316,6 +317,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Bookings'),
+        actions: [const LanguageToggle(), const SizedBox(width: 8)],
         bottom: TabBar(
           controller: _tabController,
           labelColor: AppColors.primary,

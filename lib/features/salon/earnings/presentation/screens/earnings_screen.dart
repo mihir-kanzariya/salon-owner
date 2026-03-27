@@ -1,3 +1,4 @@
+import '../../../../../core/widgets/language_toggle.dart';
 import 'package:flutter/material.dart';
 import '../../../../../core/constants/app_colors.dart';
 import '../../../../../core/constants/app_text_styles.dart';
@@ -70,6 +71,8 @@ class _EarningsScreenState extends State<EarningsScreen> {
       appBar: AppBar(
         title: const Text('Earnings'),
         actions: [
+          const LanguageToggle(),
+          const SizedBox(width: 4),
           IconButton(
             icon: const Icon(Icons.history),
             onPressed: () {
