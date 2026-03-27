@@ -1,5 +1,7 @@
+import '../../../../../core/i18n/locale_provider.dart';
 import '../../../../../core/widgets/language_toggle.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../../../core/constants/app_colors.dart';
 import '../../../../../core/constants/app_text_styles.dart';
 import '../../../../../core/widgets/skeletons/skeleton_layouts.dart';
@@ -69,7 +71,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Earnings'),
+        title: Text(context.watch<LocaleProvider>().tr('earnings')),
         actions: [
           const LanguageToggle(),
           const SizedBox(width: 4),
@@ -123,6 +125,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
   }
 
   Widget _buildStatsGrid() {
+    final l = context.watch<LocaleProvider>();
     final totalEarnings = _earnings['total_earnings'] ??
         _earnings['totalEarnings'] ??
         0;
@@ -145,28 +148,28 @@ class _EarningsScreenState extends State<EarningsScreen> {
       physics: const NeverScrollableScrollPhysics(),
       children: [
         _EarningsCard(
-          title: 'Total Earnings',
+          title: l.tr('net_earnings'),
           amount: _formatCurrency(totalEarnings),
           icon: Icons.account_balance_wallet,
           color: AppColors.primary,
           bgColor: AppColors.primary.withValues(alpha: 0.1),
         ),
         _EarningsCard(
-          title: 'This Month',
+          title: l.tr('total_revenue'),
           amount: _formatCurrency(thisMonth),
           icon: Icons.calendar_month,
           color: AppColors.success,
           bgColor: AppColors.successLight,
         ),
         _EarningsCard(
-          title: 'Pending Withdrawal',
+          title: l.tr('request_withdrawal'),
           amount: _formatCurrency(pendingWithdrawal),
           icon: Icons.pending_actions,
           color: AppColors.accent,
           bgColor: AppColors.accentLight,
         ),
         _EarningsCard(
-          title: 'Commission Paid',
+          title: l.tr('commission'),
           amount: _formatCurrency(commissionPaid),
           icon: Icons.receipt_long,
           color: AppColors.error,
@@ -202,14 +205,14 @@ class _EarningsScreenState extends State<EarningsScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Earnings Chart',
+            context.watch<LocaleProvider>().tr('earnings_chart'),
             style: AppTextStyles.labelLarge.copyWith(
               color: AppColors.textSecondary,
             ),
           ),
           const SizedBox(height: 4),
           Text(
-            'Chart coming soon',
+            context.watch<LocaleProvider>().tr('chart_coming_soon'),
             style: AppTextStyles.caption,
           ),
         ],
@@ -224,7 +227,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const Text('Recent Transactions', style: AppTextStyles.h4),
+            Text(context.watch<LocaleProvider>().tr('recent_transactions'), style: AppTextStyles.h4),
             if (_transactions.isNotEmpty)
               TextButton(
                 onPressed: () {
@@ -235,7 +238,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
                   );
                 },
                 child: Text(
-                  'View All',
+                  context.watch<LocaleProvider>().tr('view_all'),
                   style: AppTextStyles.labelMedium.copyWith(
                     color: AppColors.primary,
                   ),
@@ -278,13 +281,13 @@ class _EarningsScreenState extends State<EarningsScreen> {
             color: AppColors.textMuted,
           ),
           const SizedBox(height: 12),
-          const Text(
-            'No transactions yet',
+          Text(
+            context.watch<LocaleProvider>().tr('no_transactions'),
             style: AppTextStyles.bodyMedium,
           ),
           const SizedBox(height: 4),
           Text(
-            'Your earnings from bookings will appear here',
+            context.watch<LocaleProvider>().tr('earnings_appear_here'),
             style: AppTextStyles.caption,
             textAlign: TextAlign.center,
           ),
@@ -308,7 +311,7 @@ class _EarningsScreenState extends State<EarningsScreen> {
       ),
       child: SafeArea(
         child: AppButton(
-          text: 'Withdraw Funds',
+          text: context.watch<LocaleProvider>().tr('withdraw_funds'),
           icon: Icons.account_balance,
           onPressed: () {
             final available = (_earnings['total_earnings'] as num?)?.toDouble() ?? 0.0;

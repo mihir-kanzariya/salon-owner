@@ -1,3 +1,4 @@
+import '../../../../../core/i18n/locale_provider.dart';
 import '../../../../../core/widgets/language_toggle.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -69,7 +70,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
                   SliverAppBar(
                     expandedHeight: 220,
                     pinned: true,
-                    title: const Text('My Salon'),
+                    title: Text(context.watch<LocaleProvider>().tr('my_salon')),
                     flexibleSpace: FlexibleSpaceBar(
                       background: _buildCoverImage(),
                     ),
@@ -282,16 +283,17 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
   }
 
   Widget _buildMenuSection() {
+    final l = context.watch<LocaleProvider>();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Manage', style: AppTextStyles.h4),
+          Text(l.tr('manage'), style: AppTextStyles.h4),
           const SizedBox(height: 12),
           _ProfileMenuTile(
             icon: Icons.edit_outlined,
-            title: 'Edit Salon Info',
+            title: l.tr('edit_salon'),
             subtitle: 'Update name, address, and details',
             onTap: () {
               if (_salonId != null) {
@@ -305,7 +307,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
           ),
           _ProfileMenuTile(
             icon: Icons.access_time_outlined,
-            title: 'Operating Hours',
+            title: l.tr('operating_hours'),
             subtitle: 'Set your working days and times',
             onTap: () {
               if (_salonId != null) {
@@ -319,7 +321,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
           ),
           _ProfileMenuTile(
             icon: Icons.photo_library_outlined,
-            title: 'Gallery',
+            title: l.tr('gallery'),
             subtitle: 'Manage your salon photos',
             onTap: () {
               if (_salonId != null) {
@@ -333,7 +335,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
           ),
           _ProfileMenuTile(
             icon: Icons.local_offer_outlined,
-            title: 'Amenities',
+            title: l.tr('amenities'),
             subtitle: 'WiFi, AC, Parking and more',
             onTap: () {
               if (_salonId != null) {
@@ -346,11 +348,11 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
             },
           ),
           const SizedBox(height: 20),
-          const Text('Engagement', style: AppTextStyles.h4),
+          Text(l.tr('engagement'), style: AppTextStyles.h4),
           const SizedBox(height: 12),
           _ProfileMenuTile(
             icon: Icons.chat_outlined,
-            title: 'Chat Messages',
+            title: l.tr('chat_messages'),
             subtitle: 'View and reply to customer chats',
             onTap: () {
               Navigator.pushNamed(context, '/salon/chat');
@@ -358,7 +360,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
           ),
           _ProfileMenuTile(
             icon: Icons.payment_outlined,
-            title: 'Payment Setup',
+            title: l.tr('payment_setup'),
             subtitle: 'KYC, bank account & payout settings',
             onTap: () {
               if (_salonId != null) {
@@ -368,7 +370,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
           ),
           _ProfileMenuTile(
             icon: Icons.account_balance_wallet_outlined,
-            title: 'Earnings & Payouts',
+            title: l.tr('earnings_payouts'),
             subtitle: 'View revenue, commission & settlements',
             onTap: () {
               Navigator.pushNamed(context, '/salon/earnings', arguments: _salonId);
@@ -376,7 +378,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
           ),
           _ProfileMenuTile(
             icon: Icons.account_balance_outlined,
-            title: 'Request Withdrawal',
+            title: l.tr('request_withdrawal'),
             subtitle: 'Transfer earnings to your bank',
             onTap: () {
               Navigator.pushNamed(context, '/salon/withdraw', arguments: {
@@ -387,7 +389,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
           ),
           _ProfileMenuTile(
             icon: Icons.receipt_long_outlined,
-            title: 'Transaction History',
+            title: l.tr('transaction_history'),
             subtitle: 'All payments & settlement records',
             onTap: () {
               if (_salonId != null) {
@@ -397,7 +399,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
           ),
           _ProfileMenuTile(
             icon: Icons.emoji_events_outlined,
-            title: 'Monthly Incentive',
+            title: l.tr('monthly_incentive'),
             subtitle: 'Track progress towards \u20B910,000 bonus',
             onTap: () {
               if (_salonId != null) {
@@ -407,13 +409,13 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
           ),
           _ProfileMenuTile(
             icon: Icons.people_outline,
-            title: 'Team Members',
+            title: l.tr('team_members'),
             subtitle: 'Manage stylists & staff',
             onTap: () => SalonShell.switchToTab(3),
           ),
           _ProfileMenuTile(
             icon: Icons.star_outline,
-            title: 'Reviews',
+            title: l.tr('salon_reviews'),
             subtitle: 'See what customers are saying',
             onTap: () {
               if (_salonId != null) {
@@ -427,6 +429,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
   }
 
   Widget _buildLogoutButton() {
+    final l = context.watch<LocaleProvider>();
     return Consumer<AuthProvider>(
       builder: (context, auth, _) {
         return Padding(
@@ -437,7 +440,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
               const SizedBox(height: 8),
               _ProfileMenuTile(
                 icon: Icons.logout,
-                title: 'Logout',
+                title: l.tr('logout'),
                 subtitle: 'Sign out of your account',
                 titleColor: AppColors.error,
                 onTap: () async {
@@ -447,19 +450,19 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                       ),
-                      title: const Text('Logout'),
+                      title: Text(l.tr('logout')),
                       content:
                           const Text('Are you sure you want to logout?'),
                       actions: [
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, false),
-                          child: const Text('Cancel'),
+                          child: Text(l.tr('cancel')),
                         ),
                         TextButton(
                           onPressed: () => Navigator.pop(ctx, true),
-                          child: const Text(
-                            'Logout',
-                            style: TextStyle(color: AppColors.error),
+                          child: Text(
+                            l.tr('logout'),
+                            style: const TextStyle(color: AppColors.error),
                           ),
                         ),
                       ],

@@ -163,6 +163,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final sp = context.watch<SalonProvider>();
+    final l = context.watch<LocaleProvider>();
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -170,7 +171,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Builder(builder: (ctx) { final l = ctx.watch<LocaleProvider>(); return Text('${l.tr('app_name')} Business', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)); }),
+            Text('${l.tr('app_name')} Business', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
             if (sp.salonName != null)
               Text(sp.salonName!, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w400, color: AppColors.textSecondary)),
           ],
@@ -224,7 +225,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
 
                     // Stats Grid
-                    const Text('Today\'s Overview', style: AppTextStyles.h3),
+                    Text(l.tr('todays_overview'), style: AppTextStyles.h3),
                     const SizedBox(height: 12),
                     GridView.count(
                       crossAxisCount: 2,
@@ -234,10 +235,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
-                        _StatCard(title: 'Bookings', value: '${_stats['today_bookings'] ?? _todayBookings.length}', icon: Icons.calendar_today, color: AppColors.primary),
-                        _StatCard(title: 'Revenue', value: '\u20B9${_stats['today_revenue'] ?? 0}', icon: Icons.currency_rupee, color: AppColors.success),
-                        _StatCard(title: 'Pending', value: '${_stats['pending_bookings'] ?? 0}', icon: Icons.pending_actions, color: AppColors.accent),
-                        _StatCard(title: 'Rating', value: (double.tryParse(_stats['rating_avg']?.toString() ?? '') ?? 0.0).toStringAsFixed(1), icon: Icons.star, color: AppColors.ratingStar),
+                        _StatCard(title: l.tr('bookings'), value: '${_stats['today_bookings'] ?? _todayBookings.length}', icon: Icons.calendar_today, color: AppColors.primary),
+                        _StatCard(title: l.tr('revenue'), value: '\u20B9${_stats['today_revenue'] ?? 0}', icon: Icons.currency_rupee, color: AppColors.success),
+                        _StatCard(title: l.tr('pending_bookings'), value: '${_stats['pending_bookings'] ?? 0}', icon: Icons.pending_actions, color: AppColors.accent),
+                        _StatCard(title: l.tr('rating'), value: (double.tryParse(_stats['rating_avg']?.toString() ?? '') ?? 0.0).toStringAsFixed(1), icon: Icons.star, color: AppColors.ratingStar),
                       ],
                     ),
                     const SizedBox(height: 20),
@@ -267,7 +268,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     ],
 
                     // Quick Actions
-                    const Text('Quick Actions', style: AppTextStyles.h3),
+                    Text(l.tr('quick_actions'), style: AppTextStyles.h3),
                     const SizedBox(height: 12),
                     _buildQuickActions(sp),
                     const SizedBox(height: 20),
@@ -276,8 +277,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        const Text('Today\'s Bookings', style: AppTextStyles.h3),
-                        TextButton(onPressed: () => SalonShell.switchToTab(1), child: const Text('View All')),
+                        Text(l.tr('todays_bookings'), style: AppTextStyles.h3),
+                        TextButton(onPressed: () => SalonShell.switchToTab(1), child: Text(l.tr('view_all'))),
                       ],
                     ),
                     const SizedBox(height: 8),
@@ -290,35 +291,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildQuickActions(SalonProvider sp) {
+    final l = context.watch<LocaleProvider>();
     if (sp.isStylist) {
       return Row(
         children: [
-          Expanded(child: _QuickAction(icon: Icons.schedule_outlined, label: 'Availability', onTap: () {
+          Expanded(child: _QuickAction(icon: Icons.schedule_outlined, label: l.tr('availability'), onTap: () {
             if (sp.memberId != null) Navigator.pushNamed(context, '/salon/stylist-availability', arguments: sp.memberId);
           })),
           const SizedBox(width: 12),
-          Expanded(child: _QuickAction(icon: Icons.account_balance_wallet_outlined, label: 'Earnings', onTap: () {
+          Expanded(child: _QuickAction(icon: Icons.account_balance_wallet_outlined, label: l.tr('earnings'), onTap: () {
             Navigator.pushNamed(context, '/salon/earnings', arguments: {'salon_id': _activeSalonId, 'stylist_member_id': sp.memberId});
           })),
           const SizedBox(width: 12),
-          Expanded(child: _QuickAction(icon: Icons.chat_outlined, label: 'Chat', onTap: () => SalonShell.switchToTab(3))),
+          Expanded(child: _QuickAction(icon: Icons.chat_outlined, label: l.tr('chat'), onTap: () => SalonShell.switchToTab(3))),
         ],
       );
     }
     return Row(
       children: [
-        Expanded(child: _QuickAction(icon: Icons.add_circle_outline, label: 'Add Service', onTap: () => Navigator.pushNamed(context, '/salon/add-service', arguments: _activeSalonId))),
+        Expanded(child: _QuickAction(icon: Icons.add_circle_outline, label: l.tr('add_service'), onTap: () => Navigator.pushNamed(context, '/salon/add-service', arguments: _activeSalonId))),
         const SizedBox(width: 12),
-        Expanded(child: _QuickAction(icon: Icons.person_add_outlined, label: 'Add Stylist', onTap: () => Navigator.pushNamed(context, '/salon/add-stylist', arguments: _activeSalonId))),
+        Expanded(child: _QuickAction(icon: Icons.person_add_outlined, label: l.tr('add_stylist'), onTap: () => Navigator.pushNamed(context, '/salon/add-stylist', arguments: _activeSalonId))),
         const SizedBox(width: 12),
-        Expanded(child: _QuickAction(icon: Icons.account_balance_wallet_outlined, label: 'Earnings', onTap: () => Navigator.pushNamed(context, '/salon/earnings', arguments: _activeSalonId))),
+        Expanded(child: _QuickAction(icon: Icons.account_balance_wallet_outlined, label: l.tr('earnings'), onTap: () => Navigator.pushNamed(context, '/salon/earnings', arguments: _activeSalonId))),
         const SizedBox(width: 12),
-        Expanded(child: _QuickAction(icon: Icons.access_time, label: 'Hours', onTap: () => Navigator.pushNamed(context, '/salon/hours', arguments: _activeSalonId))),
+        Expanded(child: _QuickAction(icon: Icons.access_time, label: l.tr('hours'), onTap: () => Navigator.pushNamed(context, '/salon/hours', arguments: _activeSalonId))),
       ],
     );
   }
 
   Widget _buildTodayBookings() {
+    final l = context.watch<LocaleProvider>();
     if (_todayBookings.isEmpty) {
       return Container(
         width: double.infinity,
@@ -328,9 +331,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
           children: [
             Icon(Icons.event_available, size: 48, color: AppColors.textMuted),
             const SizedBox(height: 8),
-            const Text('No bookings today', style: AppTextStyles.bodyMedium),
+            Text(l.tr('no_bookings_today'), style: AppTextStyles.bodyMedium),
             const SizedBox(height: 4),
-            const Text('New bookings will appear here', style: AppTextStyles.caption),
+            Text(l.tr('new_bookings_appear'), style: AppTextStyles.caption),
           ],
         ),
       );
@@ -397,24 +400,25 @@ class _PaymentBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.watch<LocaleProvider>();
     Color color;
     String label;
     switch (status) {
       case 'paid':
         color = AppColors.success;
-        label = 'Paid';
+        label = l.tr('paid');
         break;
       case 'token_paid':
         color = AppColors.primary;
-        label = 'Token';
+        label = l.tr('token');
         break;
       case 'refunded':
         color = Colors.blue;
-        label = 'Refunded';
+        label = l.tr('refunded');
         break;
       default:
         color = AppColors.textMuted;
-        label = 'Unpaid';
+        label = l.tr('unpaid');
     }
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

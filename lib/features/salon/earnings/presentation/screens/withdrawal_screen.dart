@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../../../../../core/i18n/locale_provider.dart';
 import '../../../../../core/constants/app_colors.dart';
 import '../../../../../core/constants/app_text_styles.dart';
 import '../../../../../core/widgets/app_button.dart';
@@ -87,7 +89,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Withdraw Funds')),
+      appBar: AppBar(title: Text(context.watch<LocaleProvider>().tr('withdraw_funds'))),
       body: _isLoadingBank
           ? const Center(child: CircularProgressIndicator())
           : Column(
@@ -133,7 +135,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
           Row(children: [
             const Icon(Icons.account_balance_wallet, color: AppColors.white, size: 20),
             const SizedBox(width: 8),
-            Text('Available Balance', style: AppTextStyles.labelLarge.copyWith(color: AppColors.white.withValues(alpha: 0.85))),
+            Text(context.watch<LocaleProvider>().tr('available_balance'), style: AppTextStyles.labelLarge.copyWith(color: AppColors.white.withValues(alpha: 0.85))),
           ]),
           const SizedBox(height: 12),
           Text(_formatCurrency(widget.availableBalance), style: AppTextStyles.h1.copyWith(color: AppColors.white, fontSize: 36)),
@@ -151,12 +153,12 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
         child: Column(children: [
           const Icon(Icons.account_balance, size: 48, color: AppColors.textMuted),
           const SizedBox(height: 12),
-          const Text('No Bank Account Set Up', style: AppTextStyles.h4),
+          Text(context.watch<LocaleProvider>().tr('no_bank_account'), style: AppTextStyles.h4),
           const SizedBox(height: 8),
-          Text('Set up your bank account to receive withdrawals', style: AppTextStyles.caption, textAlign: TextAlign.center),
+          Text(context.watch<LocaleProvider>().tr('setup_bank_subtitle'), style: AppTextStyles.caption, textAlign: TextAlign.center),
           const SizedBox(height: 16),
           AppButton(
-            text: 'Set Up Bank Account',
+            text: context.watch<LocaleProvider>().tr('setup_bank'),
             onPressed: () async {
               await Navigator.pushNamed(context, '/salon/bank-account', arguments: widget.salonId);
               _loadBankAccount();
@@ -175,13 +177,13 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
         Row(children: [
           const Icon(Icons.account_balance, color: AppColors.primary, size: 22),
           const SizedBox(width: 8),
-          const Expanded(child: Text('Bank Account', style: AppTextStyles.h4)),
+          Expanded(child: Text(context.watch<LocaleProvider>().tr('bank_account'), style: AppTextStyles.h4)),
           GestureDetector(
             onTap: () async {
               await Navigator.pushNamed(context, '/salon/bank-account', arguments: widget.salonId);
               _loadBankAccount();
             },
-            child: const Text('Change', style: TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600)),
+            child: Text(context.watch<LocaleProvider>().tr('change_bank'), style: const TextStyle(color: AppColors.primary, fontSize: 13, fontWeight: FontWeight.w600)),
           ),
         ]),
         const SizedBox(height: 16),
@@ -207,7 +209,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(color: AppColors.cardBackground, borderRadius: BorderRadius.circular(16), boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 8, offset: const Offset(0, 2))]),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Withdrawal Amount', style: AppTextStyles.h4),
+        Text(context.watch<LocaleProvider>().tr('withdrawal_amount'), style: AppTextStyles.h4),
         const SizedBox(height: 16),
         AppTextField(
           controller: _amountController,
@@ -249,7 +251,7 @@ class _WithdrawalScreenState extends State<WithdrawalScreen> {
       child: SafeArea(
         top: false,
         child: AppButton(
-          text: 'Submit Withdrawal Request',
+          text: context.watch<LocaleProvider>().tr('submit_withdrawal'),
           onPressed: (_isSubmitting || _savedBank == null) ? null : _submitWithdrawal,
           isLoading: _isSubmitting,
           icon: _isSubmitting ? null : Icons.send,

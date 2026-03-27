@@ -1,3 +1,4 @@
+import '../../../../../core/i18n/locale_provider.dart';
 import '../../../../../core/widgets/language_toggle.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -146,17 +147,18 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
     final commissionAmount = (amount * commissionPercent) / 100;
     final netAmount = amount - commissionAmount;
 
+    final l = context.read<LocaleProvider>();
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Collect Payment', style: AppTextStyles.h4),
+        title: Text(l.tr('collect_payment'), style: AppTextStyles.h4),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Collect \u20B9${amount.toStringAsFixed(0)} from $customerName?',
+              '${l.tr('collect')} \u20B9${amount.toStringAsFixed(0)} from $customerName?',
               style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 16),
@@ -168,11 +170,11 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
               ),
               child: Column(
                 children: [
-                  _buildBreakdownRow('Total Amount', '\u20B9${amount.toStringAsFixed(0)}', AppColors.textPrimary),
+                  _buildBreakdownRow(l.tr('total_amount'), '\u20B9${amount.toStringAsFixed(0)}', AppColors.textPrimary),
                   const Divider(height: 16, color: AppColors.border),
-                  _buildBreakdownRow('Platform Commission', '-\u20B9${commissionAmount.toStringAsFixed(0)}', AppColors.error),
+                  _buildBreakdownRow(l.tr('platform_commission'), '-\u20B9${commissionAmount.toStringAsFixed(0)}', AppColors.error),
                   const Divider(height: 16, color: AppColors.border),
-                  _buildBreakdownRow('Your Earnings', '\u20B9${netAmount.toStringAsFixed(0)}', AppColors.success),
+                  _buildBreakdownRow(l.tr('your_earnings'), '\u20B9${netAmount.toStringAsFixed(0)}', AppColors.success),
                 ],
               ),
             ),
@@ -181,7 +183,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: Text('Cancel', style: AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary)),
+            child: Text(l.tr('cancel'), style: AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
@@ -191,7 +193,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
               elevation: 0,
             ),
-            child: const Text('Collect', style: TextStyle(fontWeight: FontWeight.w600)),
+            child: Text(l.tr('collect'), style: const TextStyle(fontWeight: FontWeight.w600)),
           ),
         ],
       ),
@@ -216,13 +218,14 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
     try {
       await _api.post('${ApiConfig.bookings}/$bookingId/collect-payment');
       if (mounted) {
+        final l = context.read<LocaleProvider>();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
+          SnackBar(
             content: Row(
               children: [
-                Icon(Icons.check_circle, color: AppColors.white, size: 20),
-                SizedBox(width: 8),
-                Text('Payment collected successfully!'),
+                const Icon(Icons.check_circle, color: AppColors.white, size: 20),
+                const SizedBox(width: 8),
+                Text(l.tr('payment_collected')),
               ],
             ),
             backgroundColor: AppColors.success,
@@ -232,9 +235,10 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
       _loadData();
     } catch (_) {
       if (mounted) {
+        final l = context.read<LocaleProvider>();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to collect payment'),
+          SnackBar(
+            content: Text(l.tr('failed_collect_payment')),
             backgroundColor: AppColors.error,
           ),
         );
@@ -246,18 +250,20 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
     try {
       await _api.post('${ApiConfig.bookings}/$bookingId/notify-customer');
       if (mounted) {
+        final l = context.read<LocaleProvider>();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Customer notified'),
+          SnackBar(
+            content: Text(l.tr('customer_notified')),
             backgroundColor: AppColors.success,
           ),
         );
       }
     } catch (_) {
       if (mounted) {
+        final l = context.read<LocaleProvider>();
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to send notification'),
+          SnackBar(
+            content: Text(l.tr('failed_notification')),
             backgroundColor: AppColors.error,
           ),
         );
@@ -313,10 +319,11 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final l = context.watch<LocaleProvider>();
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Bookings'),
+        title: Text(l.tr('bookings')),
         actions: [const LanguageToggle(), const SizedBox(width: 8)],
         bottom: TabBar(
           controller: _tabController,
@@ -326,10 +333,10 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
           indicatorWeight: 3,
           labelStyle: AppTextStyles.labelLarge,
           unselectedLabelStyle: AppTextStyles.labelMedium,
-          tabs: const [
-            Tab(text: 'Today'),
-            Tab(text: 'Upcoming'),
-            Tab(text: 'Past'),
+          tabs: [
+            Tab(text: l.tr('today')),
+            Tab(text: l.tr('upcoming')),
+            Tab(text: l.tr('past')),
           ],
         ),
       ),
@@ -341,20 +348,20 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
                 _buildBookingList(
                   bookings: _todayBookings,
                   emptyIcon: Icons.event_available,
-                  emptyTitle: 'No bookings today',
-                  emptySubtitle: 'New bookings will appear here',
+                  emptyTitle: l.tr('no_bookings_today'),
+                  emptySubtitle: l.tr('new_bookings_appear'),
                 ),
                 _buildBookingList(
                   bookings: _upcomingBookings,
                   emptyIcon: Icons.upcoming_outlined,
-                  emptyTitle: 'No upcoming bookings',
-                  emptySubtitle: 'Future bookings will appear here',
+                  emptyTitle: l.tr('no_upcoming_bookings'),
+                  emptySubtitle: l.tr('future_bookings_appear'),
                 ),
                 _buildBookingList(
                   bookings: _pastBookings,
                   emptyIcon: Icons.history,
-                  emptyTitle: 'No past bookings',
-                  emptySubtitle: 'Completed bookings will show here',
+                  emptyTitle: l.tr('no_past_bookings'),
+                  emptySubtitle: l.tr('completed_bookings_show'),
                   scrollController: _pastScrollController,
                   hasMore: _pastHasMore,
                   loadingMore: _pastLoadingMore,
@@ -542,7 +549,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
                       ),
                       const SizedBox(width: 6),
                       Text(
-                        isPaid ? 'Paid' : '\u20B9$totalAmount',
+                        isPaid ? context.watch<LocaleProvider>().tr('paid') : '\u20B9$totalAmount',
                         style: AppTextStyles.bodySmall.copyWith(
                           color: isPaid ? AppColors.success : null,
                           fontWeight: isPaid ? FontWeight.w600 : null,
@@ -586,6 +593,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
   }
 
   Widget _buildActionButtons(String bookingId, String status, String paymentStatus, dynamic totalAmount, {String customerName = 'Customer'}) {
+    final l = context.watch<LocaleProvider>();
     final showCollect = (status == 'confirmed' || status == 'in_progress' || status == 'completed') &&
         paymentStatus != 'paid';
 
@@ -603,7 +611,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
                   borderRadius: BorderRadius.circular(8),
                 ),
               ),
-              child: const Text('Cancel', style: TextStyle(fontWeight: FontWeight.w600)),
+              child: Text(l.tr('cancel'), style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
           ),
           const SizedBox(width: 12),
@@ -619,7 +627,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
                 ),
                 elevation: 0,
               ),
-              child: const Text('Confirm', style: TextStyle(fontWeight: FontWeight.w600)),
+              child: Text(l.tr('confirm_booking'), style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
           ),
         ],
@@ -642,7 +650,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
                 ),
                 elevation: 0,
               ),
-              child: const Text('Start', style: TextStyle(fontWeight: FontWeight.w600)),
+              child: Text(l.tr('start'), style: const TextStyle(fontWeight: FontWeight.w600)),
             ),
           ),
           if (showCollect) ...[
@@ -652,7 +660,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
               child: OutlinedButton.icon(
                 onPressed: () => _confirmCollectPayment(bookingId, customerName, totalAmount),
                 icon: const Icon(Icons.currency_rupee, size: 16),
-                label: Text('Collect \u20B9$totalAmount'),
+                label: Text('${l.tr('collect')} \u20B9$totalAmount'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.success,
                   side: const BorderSide(color: AppColors.success),
@@ -684,7 +692,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
                       borderRadius: BorderRadius.circular(8),
                     ),
                   ),
-                  child: const Text('No Show', style: TextStyle(fontWeight: FontWeight.w600)),
+                  child: Text(l.tr('mark_no_show'), style: const TextStyle(fontWeight: FontWeight.w600)),
                 ),
               ),
               const SizedBox(width: 12),
@@ -700,7 +708,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
                     ),
                     elevation: 0,
                   ),
-                  child: const Text('Complete', style: TextStyle(fontWeight: FontWeight.w600)),
+                  child: Text(l.tr('complete_service'), style: const TextStyle(fontWeight: FontWeight.w600)),
                 ),
               ),
             ],
@@ -712,7 +720,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
               child: OutlinedButton.icon(
                 onPressed: () => _confirmCollectPayment(bookingId, customerName, totalAmount),
                 icon: const Icon(Icons.currency_rupee, size: 16),
-                label: Text('Collect \u20B9$totalAmount'),
+                label: Text('${l.tr('collect')} \u20B9$totalAmount'),
                 style: OutlinedButton.styleFrom(
                   foregroundColor: AppColors.success,
                   side: const BorderSide(color: AppColors.success),

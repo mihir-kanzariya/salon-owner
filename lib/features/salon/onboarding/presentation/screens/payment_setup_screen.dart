@@ -1,7 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:provider/provider.dart';
 import '../../../../../config/api_config.dart';
+import '../../../../../core/i18n/locale_provider.dart';
 import '../../../../../core/utils/storage_service.dart';
 
 /// Multi-step onboarding screen for salon owners to set up Razorpay Route.
@@ -127,8 +129,9 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.watch<LocaleProvider>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Payment Setup')),
+      appBar: AppBar(title: Text(l.tr('payment_setup'))),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _isComplete
@@ -138,6 +141,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
   }
 
   Widget _buildCompleteView() {
+    final l = context.watch<LocaleProvider>();
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -146,17 +150,17 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
           children: [
             const Icon(Icons.check_circle_outline, size: 80, color: Colors.green),
             const SizedBox(height: 16),
-            const Text('Payment Setup Submitted', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            Text(l.tr('payment_setup_submitted'), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
             const SizedBox(height: 8),
-            const Text('Your KYC verification is in progress. This usually takes 1-2 business days.', textAlign: TextAlign.center),
+            Text(l.tr('kyc_in_progress'), textAlign: TextAlign.center),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _refreshStatus,
               icon: const Icon(Icons.refresh),
-              label: const Text('Refresh Status'),
+              label: Text(l.tr('refresh_status')),
             ),
             const SizedBox(height: 12),
-            TextButton(onPressed: () => Navigator.pop(context), child: const Text('Go Back')),
+            TextButton(onPressed: () => Navigator.pop(context), child: Text(l.tr('go_back'))),
           ],
         ),
       ),

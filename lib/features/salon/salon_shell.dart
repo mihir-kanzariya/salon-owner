@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/i18n/locale_provider.dart';
 import 'providers/salon_provider.dart';
 import 'dashboard/presentation/screens/dashboard_screen.dart';
 import 'bookings/presentation/screens/salon_bookings_screen.dart';
@@ -96,32 +97,37 @@ class _SalonShellState extends State<SalonShell> {
         index: _currentIndex,
         children: List.generate(5, (i) => _buildScreen(i, sp)),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: (i) {
-          setState(() {
-            _loadedTabs.add(i);
-            _currentIndex = i;
-          });
+      bottomNavigationBar: Builder(
+        builder: (context) {
+          final l = context.watch<LocaleProvider>();
+          return BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (i) {
+              setState(() {
+                _loadedTabs.add(i);
+                _currentIndex = i;
+              });
+            },
+            type: BottomNavigationBarType.fixed,
+            selectedItemColor: AppColors.primary,
+            unselectedItemColor: AppColors.textMuted,
+            items: sp.isStaffRole
+                ? [
+                    BottomNavigationBarItem(icon: const Icon(Icons.dashboard_outlined), activeIcon: const Icon(Icons.dashboard), label: l.tr('dashboard')),
+                    BottomNavigationBarItem(icon: const Icon(Icons.calendar_today_outlined), activeIcon: const Icon(Icons.calendar_today), label: l.tr('bookings')),
+                    BottomNavigationBarItem(icon: const Icon(Icons.content_cut_outlined), activeIcon: const Icon(Icons.content_cut), label: l.tr('services')),
+                    BottomNavigationBarItem(icon: const Icon(Icons.chat_outlined), activeIcon: const Icon(Icons.chat), label: l.tr('chat')),
+                    BottomNavigationBarItem(icon: const Icon(Icons.person_outline), activeIcon: const Icon(Icons.person), label: l.tr('profile')),
+                  ]
+                : [
+                    BottomNavigationBarItem(icon: const Icon(Icons.dashboard_outlined), activeIcon: const Icon(Icons.dashboard), label: l.tr('dashboard')),
+                    BottomNavigationBarItem(icon: const Icon(Icons.calendar_today_outlined), activeIcon: const Icon(Icons.calendar_today), label: l.tr('bookings')),
+                    BottomNavigationBarItem(icon: const Icon(Icons.content_cut_outlined), activeIcon: const Icon(Icons.content_cut), label: l.tr('services')),
+                    BottomNavigationBarItem(icon: const Icon(Icons.people_outline), activeIcon: const Icon(Icons.people), label: l.tr('team_members')),
+                    BottomNavigationBarItem(icon: const Icon(Icons.store_outlined), activeIcon: const Icon(Icons.store), label: l.tr('my_salon')),
+                  ],
+          );
         },
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: AppColors.primary,
-        unselectedItemColor: AppColors.textMuted,
-        items: sp.isStaffRole
-            ? const [
-                BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: 'Dashboard'),
-                BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined), activeIcon: Icon(Icons.calendar_today), label: 'Bookings'),
-                BottomNavigationBarItem(icon: Icon(Icons.content_cut_outlined), activeIcon: Icon(Icons.content_cut), label: 'Services'),
-                BottomNavigationBarItem(icon: Icon(Icons.chat_outlined), activeIcon: Icon(Icons.chat), label: 'Chat'),
-                BottomNavigationBarItem(icon: Icon(Icons.person_outline), activeIcon: Icon(Icons.person), label: 'Profile'),
-              ]
-            : const [
-                BottomNavigationBarItem(icon: Icon(Icons.dashboard_outlined), activeIcon: Icon(Icons.dashboard), label: 'Dashboard'),
-                BottomNavigationBarItem(icon: Icon(Icons.calendar_today_outlined), activeIcon: Icon(Icons.calendar_today), label: 'Bookings'),
-                BottomNavigationBarItem(icon: Icon(Icons.content_cut_outlined), activeIcon: Icon(Icons.content_cut), label: 'Services'),
-                BottomNavigationBarItem(icon: Icon(Icons.people_outline), activeIcon: Icon(Icons.people), label: 'Team'),
-                BottomNavigationBarItem(icon: Icon(Icons.store_outlined), activeIcon: Icon(Icons.store), label: 'Salon'),
-              ],
       ),
     );
   }

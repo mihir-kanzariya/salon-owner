@@ -23,6 +23,7 @@ import 'features/salon/team/presentation/screens/add_stylist_screen.dart';
 import 'features/salon/team/presentation/screens/stylist_availability_screen.dart';
 import 'features/salon/earnings/presentation/screens/earnings_screen.dart';
 import 'features/salon/earnings/presentation/screens/withdrawal_screen.dart';
+import 'features/salon/earnings/presentation/screens/bank_account_setup_screen.dart';
 import 'features/salon/earnings/presentation/screens/transactions_screen.dart';
 import 'features/salon/onboarding/presentation/screens/payment_setup_screen.dart';
 import 'features/salon/profile/presentation/screens/operating_hours_screen.dart';
@@ -209,6 +210,10 @@ class HeloHairBusinessApp extends StatelessWidget {
         final salonId = settings.arguments as String? ?? '';
         if (salonId.isEmpty) return _notFoundRoute();
         return SlidePageRoute(child: TransactionsScreen(salonId: salonId));
+      case '/salon/bank-account':
+        final salonId = settings.arguments as String? ?? '';
+        if (salonId.isEmpty) return _notFoundRoute();
+        return SlidePageRoute(child: BankAccountSetupScreen(salonId: salonId));
       case '/salon/payment-setup':
         final salonId = settings.arguments as String? ?? '';
         if (salonId.isEmpty) return _notFoundRoute();
