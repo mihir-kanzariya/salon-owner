@@ -12,10 +12,10 @@ import '../../../salon/providers/salon_provider.dart';
 const _devMode = true;
 
 const _testAccounts = [
+  {'phone': '7777700001', 'name': 'Raj Patel', 'role': 'Salon Owner', 'salon': 'New Salon', 'icon': Icons.store},
+  {'phone': '7777700002', 'name': 'Meera Shah', 'role': 'Salon Owner', 'salon': 'New Salon', 'icon': Icons.store},
   {'phone': '9999999001', 'name': 'Arjun Mehta', 'role': 'Salon Owner', 'salon': 'Urban Edge Salon', 'icon': Icons.store},
   {'phone': '9999999002', 'name': 'Priya Sharma', 'role': 'Salon Owner', 'salon': 'Glamour Studio', 'icon': Icons.store},
-  {'phone': '9999999003', 'name': 'Rahul Verma', 'role': 'Customer', 'salon': '', 'icon': Icons.person},
-  {'phone': '9999999004', 'name': 'Sneha Patel', 'role': 'Customer', 'salon': '', 'icon': Icons.person},
   {'phone': '9999999005', 'name': 'Vikram Singh', 'role': 'Stylist', 'salon': 'Urban Edge Salon', 'icon': Icons.content_cut},
   {'phone': '9999999006', 'name': 'Anita Desai', 'role': 'Stylist', 'salon': 'Glamour Studio', 'icon': Icons.content_cut},
 ];

@@ -6,6 +6,7 @@ import '../../../../core/widgets/app_button.dart';
 import '../../../../core/widgets/app_text_field.dart';
 import '../../../../core/utils/snackbar_utils.dart';
 import '../providers/auth_provider.dart';
+import '../../../salon/providers/salon_provider.dart';
 
 class ProfileSetupScreen extends StatefulWidget {
   const ProfileSetupScreen({super.key});
@@ -40,7 +41,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
     if (!mounted) return;
     
     if (success) {
-      Navigator.pushReplacementNamed(context, '/home');
+      // Load salon data and route to salon home or create
+await context.read<SalonProvider>().loadSalonData();
+if (!context.mounted) return;
+final salonId = context.read<SalonProvider>().salonId;
+if (salonId == null) {
+  Navigator.pushReplacementNamed(context, '/salon/create');
+} else {
+  Navigator.pushReplacementNamed(context, '/salon-home');
+}
     } else {
       SnackbarUtils.showError(context, provider.error);
     }

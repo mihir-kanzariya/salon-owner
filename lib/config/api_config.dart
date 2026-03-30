@@ -48,6 +48,12 @@ class ApiConfig {
   static String salonSettlements(String salonId) => '/payments/salon/$salonId/settlements';
   static String incentiveProgress(String salonId) => '/payments/salon/$salonId/incentive-progress';
 
+  // Wallet
+  static String walletSummary(String salonId) => '/wallet/salon/$salonId/summary';
+  static String walletLedger(String salonId) => '/wallet/salon/$salonId/ledger';
+  static String walletWithdraw(String salonId) => '/wallet/salon/$salonId/withdraw';
+  static String walletWithdrawals(String salonId) => '/wallet/salon/$salonId/withdrawals';
+
   // Reviews
   static const String reviews = '/reviews';
 
