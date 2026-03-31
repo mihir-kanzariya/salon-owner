@@ -142,8 +142,9 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
 
   Future<void> _confirmCollectPayment(String bookingId, String customerName, dynamic totalAmount) async {
     final amount = totalAmount is num ? totalAmount.toDouble() : double.tryParse(totalAmount.toString()) ?? 0;
-    // Estimate commission (will be confirmed by backend)
-    final commissionPercent = 10.0; // platform default
+    // Get commission from salon data (falls back to platform default 10%)
+    final salonData = context.read<SalonProvider>().salonData;
+    final commissionPercent = double.tryParse(salonData?['commission_override']?.toString() ?? '') ?? 10.0;
     final commissionAmount = (amount * commissionPercent) / 100;
     final netAmount = amount - commissionAmount;
 

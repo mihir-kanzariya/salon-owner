@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -8,8 +9,8 @@ import '../../../../core/utils/snackbar_utils.dart';
 import '../providers/auth_provider.dart';
 import '../../../salon/providers/salon_provider.dart';
 
-/// Test accounts — always visible for now (testing phase).
-const _devMode = true;
+/// Test accounts — only visible in debug builds.
+final _devMode = kDebugMode;
 
 const _testAccounts = [
   {'phone': '7777700001', 'name': 'Raj Patel', 'role': 'Salon Owner', 'salon': 'New Salon', 'icon': Icons.store},
