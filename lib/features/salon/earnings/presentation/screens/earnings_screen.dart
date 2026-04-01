@@ -258,13 +258,16 @@ class _EarningsScreenState extends State<EarningsScreen> {
         else
           ..._transactions.map((transaction) {
             return _TransactionTile(
-              date: transaction['date'] ??
+              date: transaction['createdAt'] ??
                   transaction['created_at'] ??
+                  transaction['date'] ??
                   '',
-              amount: transaction['amount'] ?? 0,
+              amount: transaction['net_amount'] ??
+                  transaction['amount'] ?? 0,
               type: transaction['type'] ?? 'booking',
-              status: transaction['status'] ?? 'completed',
-              description: transaction['description'] ?? '',
+              status: transaction['status'] ?? 'pending',
+              description: transaction['description'] ??
+                  'Booking #${transaction['booking']?['booking_number'] ?? ''}',
             );
           }),
       ],
