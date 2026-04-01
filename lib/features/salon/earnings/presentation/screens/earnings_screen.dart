@@ -1,3 +1,4 @@
+import '../../../../../config/api_config.dart';
 import '../../../../../core/i18n/locale_provider.dart';
 import '../../../../../core/widgets/language_toggle.dart';
 import 'package:flutter/material.dart';
@@ -22,18 +23,30 @@ class _EarningsScreenState extends State<EarningsScreen> {
   final ApiService _api = ApiService();
   bool _isLoading = true;
   Map<String, dynamic> _earnings = {};
+  Map<String, dynamic> _wallet = {};
   List<dynamic> _transactions = [];
 
   @override
   void initState() {
     super.initState();
-    _loadEarnings();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    setState(() => _isLoading = true);
+    await Future.wait([_loadEarnings(), _loadWallet()]);
+    if (mounted) setState(() => _isLoading = false);
+  }
+
+  Future<void> _loadWallet() async {
+    try {
+      final res = await _api.get(ApiConfig.walletSummary(widget.salonId));
+      if (res['data'] != null) _wallet = res['data'];
+    } catch (_) {}
   }
 
   Future<void> _loadEarnings() async {
     try {
-      setState(() => _isLoading = true);
-
       final queryParams = <String, dynamic>{};
       if (widget.stylistMemberId != null) {
         queryParams['stylist_member_id'] = widget.stylistMemberId!;
@@ -43,21 +56,21 @@ class _EarningsScreenState extends State<EarningsScreen> {
         queryParams: queryParams.isNotEmpty ? queryParams : null,
       );
       final data = res['data'] ?? {};
-      final summary = data['summary'] as Map<String, dynamic>? ?? {};
 
-      // Map backend response fields to what the UI expects
+      final walletAvailable = _parseNum(_wallet['available_balance']);
+      final walletHeld = _parseNum(_wallet['held_balance']);
+      final walletPending = _parseNum(_wallet['pending_withdrawals']);
+
       _earnings = {
-        'total_earnings': _parseNum(summary['total_net']),
-        'this_month': _parseNum(summary['total_net']), // same as total for now
-        'pending_withdrawal': 0,
-        'commission_paid': _parseNum(summary['total_commission']),
+        'total_earnings': _parseNum(data['total_net']),
+        'available': walletAvailable,
+        'held': walletHeld,
+        'pending_withdrawal': walletPending,
+        'commission_paid': _parseNum(data['total_commission']),
+        'withdrawable': _parseNum(_wallet['withdrawable_balance']),
       };
       _transactions = (data['earnings'] as List<dynamic>?) ?? [];
-
-      setState(() => _isLoading = false);
-    } catch (_) {
-      setState(() => _isLoading = false);
-    }
+    } catch (_) {}
   }
 
   num _parseNum(dynamic value) {
@@ -126,18 +139,10 @@ class _EarningsScreenState extends State<EarningsScreen> {
 
   Widget _buildStatsGrid() {
     final l = context.watch<LocaleProvider>();
-    final totalEarnings = _earnings['total_earnings'] ??
-        _earnings['totalEarnings'] ??
-        0;
-    final thisMonth = _earnings['this_month'] ??
-        _earnings['thisMonth'] ??
-        0;
-    final pendingWithdrawal = _earnings['pending_withdrawal'] ??
-        _earnings['pendingWithdrawal'] ??
-        0;
-    final commissionPaid = _earnings['commission_paid'] ??
-        _earnings['commissionPaid'] ??
-        0;
+    final withdrawable = _earnings['withdrawable'] ?? 0;
+    final totalEarnings = _earnings['total_earnings'] ?? 0;
+    final pendingWithdrawal = _earnings['pending_withdrawal'] ?? 0;
+    final commissionPaid = _earnings['commission_paid'] ?? 0;
 
     return GridView.count(
       crossAxisCount: 2,
@@ -148,21 +153,21 @@ class _EarningsScreenState extends State<EarningsScreen> {
       physics: const NeverScrollableScrollPhysics(),
       children: [
         _EarningsCard(
-          title: l.tr('net_earnings'),
-          amount: _formatCurrency(totalEarnings),
+          title: l.tr('withdrawable'),
+          amount: _formatCurrency(withdrawable),
           icon: Icons.account_balance_wallet,
           color: AppColors.primary,
           bgColor: AppColors.primary.withValues(alpha: 0.1),
         ),
         _EarningsCard(
-          title: l.tr('total_revenue'),
-          amount: _formatCurrency(thisMonth),
-          icon: Icons.calendar_month,
+          title: l.tr('net_earnings'),
+          amount: _formatCurrency(totalEarnings),
+          icon: Icons.trending_up,
           color: AppColors.success,
           bgColor: AppColors.successLight,
         ),
         _EarningsCard(
-          title: l.tr('request_withdrawal'),
+          title: l.tr('pending_withdrawal'),
           amount: _formatCurrency(pendingWithdrawal),
           icon: Icons.pending_actions,
           color: AppColors.accent,
@@ -314,13 +319,13 @@ class _EarningsScreenState extends State<EarningsScreen> {
           text: context.watch<LocaleProvider>().tr('withdraw_funds'),
           icon: Icons.account_balance,
           onPressed: () {
-            final available = (_earnings['total_earnings'] as num?)?.toDouble() ?? 0.0;
+            final withdrawable = (_earnings['withdrawable'] as num?)?.toDouble() ?? 0.0;
             Navigator.pushNamed(
               context,
               '/salon/withdraw',
               arguments: {
                 'salon_id': widget.salonId,
-                'available_balance': available,
+                'available_balance': withdrawable,
               },
             );
           },
