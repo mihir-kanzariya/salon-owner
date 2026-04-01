@@ -104,12 +104,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ApiConfig.salonEarnings(_activeSalonId!),
             queryParams: {'from': DateFormat('yyyy-MM-dd').format(weekStart)},
           );
-          final summary = earningsRes['data']?['summary'];
-          if (summary != null) {
-            _weekRevenue = double.tryParse(summary['total_revenue']?.toString() ?? '0') ?? 0;
-            _weekCommission = double.tryParse(summary['total_commission']?.toString() ?? '0') ?? 0;
-            _weekNet = double.tryParse(summary['total_net']?.toString() ?? '0') ?? 0;
-            _weekBookings = int.tryParse(summary['total_bookings']?.toString() ?? '0') ?? 0;
+          // API returns flat: { total_earned, total_commission, total_net, total_bookings, earnings }
+          final earningsData = earningsRes['data'];
+          if (earningsData != null) {
+            _weekRevenue = double.tryParse(earningsData['total_earned']?.toString() ?? '0') ?? 0;
+            _weekCommission = double.tryParse(earningsData['total_commission']?.toString() ?? '0') ?? 0;
+            _weekNet = double.tryParse(earningsData['total_net']?.toString() ?? '0') ?? 0;
+            _weekBookings = int.tryParse(earningsData['total_bookings']?.toString() ?? '0') ?? 0;
           }
         } catch (_) {}
 
@@ -133,8 +134,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ApiConfig.salonEarnings(_activeSalonId!),
             queryParams: {'from': DateFormat('yyyy-MM-dd').format(monthStart)},
           );
-          final monthSummary = monthEarningsRes['data']?['summary'];
-          _monthBookings = int.tryParse(monthSummary?['total_bookings']?.toString() ?? '0') ?? 0;
+          final monthData = monthEarningsRes['data'];
+          _monthBookings = int.tryParse(monthData?['total_bookings']?.toString() ?? '0') ?? 0;
         } catch (_) {}
       }
 

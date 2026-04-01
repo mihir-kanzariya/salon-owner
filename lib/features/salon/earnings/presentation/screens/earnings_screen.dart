@@ -34,7 +34,9 @@ class _EarningsScreenState extends State<EarningsScreen> {
 
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    await Future.wait([_loadEarnings(), _loadWallet()]);
+    // Load wallet first, then earnings (earnings uses wallet data)
+    await _loadWallet();
+    await _loadEarnings();
     if (mounted) setState(() => _isLoading = false);
   }
 
@@ -55,19 +57,18 @@ class _EarningsScreenState extends State<EarningsScreen> {
         '/payments/salon/${widget.salonId}/earnings',
         queryParams: queryParams.isNotEmpty ? queryParams : null,
       );
+      // API returns data flat: { total_earned, total_commission, total_net, total_bookings, earnings: [] }
+      // NOT nested under data.summary
       final data = res['data'] ?? {};
-
-      final walletAvailable = _parseNum(_wallet['available_balance']);
-      final walletHeld = _parseNum(_wallet['held_balance']);
-      final walletPending = _parseNum(_wallet['pending_withdrawals']);
 
       _earnings = {
         'total_earnings': _parseNum(data['total_net']),
-        'available': walletAvailable,
-        'held': walletHeld,
-        'pending_withdrawal': walletPending,
+        'available': _parseNum(_wallet['available_balance']),
+        'held': _parseNum(_wallet['held_balance']),
+        'pending_withdrawal': _parseNum(_wallet['pending_withdrawals']),
         'commission_paid': _parseNum(data['total_commission']),
         'withdrawable': _parseNum(_wallet['withdrawable_balance']),
+        'total_bookings': _parseNum(data['total_bookings']),
       };
       _transactions = (data['earnings'] as List<dynamic>?) ?? [];
     } catch (_) {}
