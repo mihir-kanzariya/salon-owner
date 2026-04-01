@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
@@ -33,8 +34,9 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
   // Existing account data
   Map<String, dynamic>? _accountData;
 
-  // Form controllers
-  final _formKey = GlobalKey<FormState>();
+  // Form controllers — separate keys to avoid conflicts
+  final _setupFormKey = GlobalKey<FormState>();
+  final _editFormKey = GlobalKey<FormState>();
   int _currentStep = 0;
   final _businessNameCtrl = TextEditingController();
   final _contactNameCtrl = TextEditingController();
@@ -59,29 +61,37 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
     setState(() { _isLoading = true; _error = null; });
     try {
       final token = await _getToken();
+      final url = '${ApiConfig.baseUrl}${ApiConfig.linkedAccount(widget.salonId)}';
+      debugPrint('[PaymentSetup] Loading: $url');
       final res = await http.get(
-        Uri.parse('${ApiConfig.baseUrl}${ApiConfig.linkedAccount(widget.salonId)}'),
+        Uri.parse(url),
         headers: {'Authorization': 'Bearer $token'},
       );
+      debugPrint('[PaymentSetup] Status: ${res.statusCode}');
       if (res.statusCode == 200) {
-        final data = jsonDecode(res.body)['data'];
-        if (data != null) {
+        final body = jsonDecode(res.body);
+        final data = body['data'];
+        if (data != null && body['success'] == true) {
           _accountData = data;
           _screenState = 'view';
+          debugPrint('[PaymentSetup] Existing account found → view mode');
         } else {
           _screenState = 'setup';
+          debugPrint('[PaymentSetup] No data → setup mode');
         }
       } else {
         _screenState = 'setup';
+        debugPrint('[PaymentSetup] ${res.statusCode} → setup mode');
       }
     } catch (e) {
       _screenState = 'setup';
+      debugPrint('[PaymentSetup] Error: $e → setup mode');
     }
     if (mounted) setState(() => _isLoading = false);
   }
 
   Future<void> _submitOnboarding() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_setupFormKey.currentState!.validate()) return;
     setState(() { _isSubmitting = true; _error = null; });
     try {
       final token = await _getToken();
@@ -106,10 +116,26 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
         _showSnackBar('Payment setup submitted successfully!', isSuccess: true);
         await _loadExistingAccount();
       } else {
-        setState(() => _error = body['message'] ?? 'Failed to submit');
+        final msg = body['message'] ?? 'Failed to submit';
+        // Map backend errors to user-friendly messages
+        String userMsg;
+        if (msg.contains('Access Denied')) {
+          userMsg = 'Razorpay Route is not yet activated on your account. Please contact support or request Route access from your Razorpay dashboard.';
+        } else if (msg.contains('Invalid PAN')) {
+          userMsg = 'Please enter a valid PAN number (e.g., ABCDE1234F)';
+        } else if (msg.contains('Invalid IFSC') || msg.contains('ifsc')) {
+          userMsg = 'Please enter a valid IFSC code (e.g., HDFC0001234)';
+        } else if (msg.contains('account_number') || msg.contains('bank')) {
+          userMsg = 'Please check your bank account details and try again';
+        } else if (msg.contains('already exists') || msg.contains('duplicate')) {
+          userMsg = 'A payment account already exists for this salon. Please refresh.';
+        } else {
+          userMsg = msg;
+        }
+        setState(() => _error = userMsg);
       }
     } catch (e) {
-      setState(() => _error = 'Network error. Please try again.');
+      setState(() => _error = 'Unable to connect. Please check your internet and try again.');
     }
     if (mounted) setState(() => _isSubmitting = false);
   }
@@ -371,7 +397,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
     final l = context.watch<LocaleProvider>();
 
     return Form(
-      key: _formKey,
+      key: _editFormKey,
       child: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -456,7 +482,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                   text: 'Save Changes',
                   isLoading: _isSubmitting,
                   onPressed: _isSubmitting ? null : () {
-                    if (!_formKey.currentState!.validate()) return;
+                    if (!_editFormKey.currentState!.validate()) return;
                     if (isBank) {
                       _updateDetails({
                         'bank_account_number': _accountNumberCtrl.text.trim(),
@@ -484,136 +510,116 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
   Widget _buildSetupForm() {
     final l = context.watch<LocaleProvider>();
     return Form(
-      key: _formKey,
-      child: Stepper(
-        currentStep: _currentStep,
-        onStepContinue: () {
-          if (_currentStep < 2) {
-            setState(() => _currentStep++);
-          } else {
-            _submitOnboarding();
-          }
-        },
-        onStepCancel: () {
-          if (_currentStep > 0) setState(() => _currentStep--);
-        },
-        controlsBuilder: (context, details) {
-          return Padding(
-            padding: const EdgeInsets.only(top: 16),
-            child: Row(
+      key: _setupFormKey,
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.all(16),
               children: [
-                AppButton(
-                  text: _currentStep == 2
-                      ? (_isSubmitting ? 'Submitting...' : l.tr('submit'))
-                      : l.tr('continue_text'),
-                  onPressed: _isSubmitting ? null : details.onStepContinue,
-                  isLoading: _isSubmitting && _currentStep == 2,
-                ),
-                const SizedBox(width: 12),
-                if (_currentStep > 0)
-                  TextButton(onPressed: details.onStepCancel, child: Text(l.tr('back'))),
-              ],
-            ),
-          );
-        },
-        steps: [
-          Step(
-            title: Text(l.tr('business_details')),
-            isActive: _currentStep >= 0,
-            state: _currentStep > 0 ? StepState.complete : StepState.indexed,
-            content: Column(
-              children: [
-                TextFormField(
-                  controller: _businessNameCtrl,
-                  decoration: InputDecoration(labelText: l.tr('legal_business_name'), prefixIcon: const Icon(Icons.business)),
-                  validator: (v) => (v == null || v.length < 3) ? 'Min 3 characters' : null,
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: _businessType,
-                  decoration: InputDecoration(labelText: l.tr('business_type'), prefixIcon: const Icon(Icons.category)),
-                  items: const [
-                    DropdownMenuItem(value: 'individual', child: Text('Individual')),
-                    DropdownMenuItem(value: 'proprietorship', child: Text('Proprietorship')),
-                    DropdownMenuItem(value: 'partnership', child: Text('Partnership')),
-                    DropdownMenuItem(value: 'private_limited', child: Text('Private Limited')),
-                    DropdownMenuItem(value: 'llp', child: Text('LLP')),
+                // Step indicator
+                Row(
+                  children: [
+                    _stepBadge(1, l.tr('business_details'), _currentStep >= 0),
+                    Expanded(child: Container(height: 2, color: _currentStep >= 1 ? AppColors.primary : AppColors.border)),
+                    _stepBadge(2, l.tr('kyc_details'), _currentStep >= 1),
+                    Expanded(child: Container(height: 2, color: _currentStep >= 2 ? AppColors.primary : AppColors.border)),
+                    _stepBadge(3, l.tr('bank_details'), _currentStep >= 2),
                   ],
-                  onChanged: (v) => setState(() => _businessType = v ?? 'individual'),
                 ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _contactNameCtrl,
-                  decoration: InputDecoration(labelText: l.tr('contact_name'), prefixIcon: const Icon(Icons.person)),
-                  validator: (v) => (v == null || v.length < 2) ? 'Required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _contactEmailCtrl,
-                  decoration: InputDecoration(labelText: l.tr('email'), prefixIcon: const Icon(Icons.email)),
-                  keyboardType: TextInputType.emailAddress,
-                  validator: (v) => (v == null || !v.contains('@')) ? 'Valid email required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _contactPhoneCtrl,
-                  decoration: InputDecoration(labelText: l.tr('phone_number'), prefixIcon: const Icon(Icons.phone)),
-                  keyboardType: TextInputType.phone,
-                  maxLength: 10,
-                  validator: (v) => (v == null || !RegExp(r'^[6-9]\d{9}$').hasMatch(v)) ? 'Valid 10-digit phone' : null,
-                ),
-              ],
-            ),
-          ),
-          Step(
-            title: Text(l.tr('kyc_details')),
-            isActive: _currentStep >= 1,
-            state: _currentStep > 1 ? StepState.complete : StepState.indexed,
-            content: Column(
-              children: [
-                TextFormField(
-                  controller: _panCtrl,
-                  decoration: InputDecoration(labelText: l.tr('pan_number'), hintText: 'ABCDE1234F', prefixIcon: const Icon(Icons.credit_card)),
-                  textCapitalization: TextCapitalization.characters,
-                  maxLength: 10,
-                  validator: (v) => (v == null || !RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]$').hasMatch(v.toUpperCase())) ? 'Invalid PAN format' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _gstCtrl,
-                  decoration: InputDecoration(labelText: '${l.tr('gst_number')} (Optional)', prefixIcon: const Icon(Icons.receipt_long)),
-                  textCapitalization: TextCapitalization.characters,
-                  maxLength: 15,
-                ),
-              ],
-            ),
-          ),
-          Step(
-            title: Text(l.tr('bank_details')),
-            isActive: _currentStep >= 2,
-            state: _currentStep > 2 ? StepState.complete : StepState.indexed,
-            content: Column(
-              children: [
-                TextFormField(
-                  controller: _accountNumberCtrl,
-                  decoration: InputDecoration(labelText: l.tr('account_number'), prefixIcon: const Icon(Icons.numbers)),
-                  keyboardType: TextInputType.number,
-                  validator: (v) => (v == null || v.length < 9 || v.length > 18) ? '9-18 digits required' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _ifscCtrl,
-                  decoration: InputDecoration(labelText: l.tr('ifsc_code'), hintText: 'HDFC0001234', prefixIcon: const Icon(Icons.code)),
-                  textCapitalization: TextCapitalization.characters,
-                  maxLength: 11,
-                  validator: (v) => (v == null || !RegExp(r'^[A-Z]{4}0[A-Z0-9]{6}$').hasMatch(v.toUpperCase())) ? 'Invalid IFSC format' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: _beneficiaryNameCtrl,
-                  decoration: InputDecoration(labelText: l.tr('beneficiary_name'), prefixIcon: const Icon(Icons.person_outline)),
-                  validator: (v) => (v == null || v.length < 3) ? 'Min 3 characters' : null,
-                ),
+                const SizedBox(height: 24),
+
+                // Step 1: Business Details
+                if (_currentStep == 0) ...[
+                  _sectionCard(l.tr('business_details'), Icons.business, [
+                    TextFormField(
+                      controller: _businessNameCtrl,
+                      decoration: InputDecoration(labelText: l.tr('legal_business_name'), prefixIcon: const Icon(Icons.business)),
+                      validator: (v) => (v == null || v.length < 3) ? 'Min 3 characters' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      value: _businessType,
+                      decoration: InputDecoration(labelText: l.tr('business_type'), prefixIcon: const Icon(Icons.category)),
+                      items: const [
+                        DropdownMenuItem(value: 'individual', child: Text('Individual')),
+                        DropdownMenuItem(value: 'proprietorship', child: Text('Proprietorship')),
+                        DropdownMenuItem(value: 'partnership', child: Text('Partnership')),
+                        DropdownMenuItem(value: 'private_limited', child: Text('Private Limited')),
+                        DropdownMenuItem(value: 'llp', child: Text('LLP')),
+                      ],
+                      onChanged: (v) => setState(() => _businessType = v ?? 'individual'),
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _contactNameCtrl,
+                      decoration: InputDecoration(labelText: l.tr('contact_name'), prefixIcon: const Icon(Icons.person)),
+                      validator: (v) => (v == null || v.length < 2) ? 'Required' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _contactEmailCtrl,
+                      decoration: InputDecoration(labelText: l.tr('email'), prefixIcon: const Icon(Icons.email)),
+                      keyboardType: TextInputType.emailAddress,
+                      validator: (v) => (v == null || !v.contains('@')) ? 'Valid email required' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _contactPhoneCtrl,
+                      decoration: InputDecoration(labelText: l.tr('phone_number'), prefixIcon: const Icon(Icons.phone)),
+                      keyboardType: TextInputType.phone,
+                      maxLength: 10,
+                      validator: (v) => (v == null || !RegExp(r'^[6-9]\d{9}$').hasMatch(v)) ? 'Valid 10-digit phone' : null,
+                    ),
+                  ]),
+                ],
+
+                // Step 2: KYC Details
+                if (_currentStep == 1) ...[
+                  _sectionCard(l.tr('kyc_details'), Icons.credit_card, [
+                    TextFormField(
+                      controller: _panCtrl,
+                      decoration: InputDecoration(labelText: l.tr('pan_number'), hintText: 'ABCDE1234F', prefixIcon: const Icon(Icons.credit_card)),
+                      textCapitalization: TextCapitalization.characters,
+                      maxLength: 10,
+                      validator: (v) => (v == null || !RegExp(r'^[A-Z]{5}[0-9]{4}[A-Z]$').hasMatch(v.toUpperCase())) ? 'Invalid PAN format' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _gstCtrl,
+                      decoration: InputDecoration(labelText: '${l.tr('gst_number')} (Optional)', prefixIcon: const Icon(Icons.receipt_long)),
+                      textCapitalization: TextCapitalization.characters,
+                      maxLength: 15,
+                    ),
+                  ]),
+                ],
+
+                // Step 3: Bank Details
+                if (_currentStep == 2) ...[
+                  _sectionCard(l.tr('bank_details'), Icons.account_balance, [
+                    TextFormField(
+                      controller: _accountNumberCtrl,
+                      decoration: InputDecoration(labelText: l.tr('account_number'), prefixIcon: const Icon(Icons.numbers)),
+                      keyboardType: TextInputType.number,
+                      validator: (v) => (v == null || v.length < 9 || v.length > 18) ? '9-18 digits required' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _ifscCtrl,
+                      decoration: InputDecoration(labelText: l.tr('ifsc_code'), hintText: 'HDFC0001234', prefixIcon: const Icon(Icons.code)),
+                      textCapitalization: TextCapitalization.characters,
+                      maxLength: 11,
+                      validator: (v) => (v == null || !RegExp(r'^[A-Z]{4}0[A-Z0-9]{6}$').hasMatch(v.toUpperCase())) ? 'Invalid IFSC format' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: _beneficiaryNameCtrl,
+                      decoration: InputDecoration(labelText: l.tr('beneficiary_name'), prefixIcon: const Icon(Icons.person_outline)),
+                      validator: (v) => (v == null || v.length < 3) ? 'Min 3 characters' : null,
+                    ),
+                  ]),
+                ],
+
                 if (_error != null) ...[
                   const SizedBox(height: 16),
                   Container(
@@ -623,7 +629,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
                       children: [
                         const Icon(Icons.error_outline, color: AppColors.error, size: 18),
                         const SizedBox(width: 8),
-                        Expanded(child: Text(_error!, style: TextStyle(color: AppColors.error, fontSize: 13))),
+                        Expanded(child: Text(_error!, style: const TextStyle(color: AppColors.error, fontSize: 13))),
                       ],
                     ),
                   ),
@@ -631,6 +637,88 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
               ],
             ),
           ),
+
+          // Bottom buttons
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.white,
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.05), blurRadius: 8, offset: const Offset(0, -2))],
+            ),
+            child: SafeArea(
+              top: false,
+              child: Row(
+                children: [
+                  if (_currentStep > 0)
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => setState(() => _currentStep--),
+                        style: OutlinedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
+                        child: Text(l.tr('back')),
+                      ),
+                    ),
+                  if (_currentStep > 0) const SizedBox(width: 12),
+                  Expanded(
+                    flex: 2,
+                    child: ElevatedButton(
+                      onPressed: _isSubmitting ? null : () {
+                        if (_currentStep < 2) {
+                          setState(() => _currentStep++);
+                        } else {
+                          _submitOnboarding();
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.white))
+                          : Text(_currentStep == 2 ? l.tr('submit') : l.tr('continue_text'), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _stepBadge(int step, String label, bool isActive) {
+    return Column(
+      children: [
+        Container(
+          width: 28, height: 28,
+          decoration: BoxDecoration(
+            color: isActive ? AppColors.primary : AppColors.border,
+            shape: BoxShape.circle,
+          ),
+          child: Center(child: Text('$step', style: TextStyle(color: isActive ? AppColors.white : AppColors.textMuted, fontWeight: FontWeight.w700, fontSize: 13))),
+        ),
+        const SizedBox(height: 4),
+        Text(label, style: TextStyle(fontSize: 10, color: isActive ? AppColors.primary : AppColors.textMuted), overflow: TextOverflow.ellipsis),
+      ],
+    );
+  }
+
+  Widget _sectionCard(String title, IconData icon, List<Widget> children) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(color: AppColors.white, borderRadius: BorderRadius.circular(16)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(children: [
+            Icon(icon, color: AppColors.primary, size: 22),
+            const SizedBox(width: 8),
+            Text(title, style: AppTextStyles.h4),
+          ]),
+          const SizedBox(height: 16),
+          ...children,
         ],
       ),
     );
