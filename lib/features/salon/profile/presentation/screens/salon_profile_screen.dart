@@ -348,6 +348,16 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
             },
           ),
           _ProfileMenuTile(
+            icon: Icons.block,
+            title: l.tr('block_slots'),
+            subtitle: l.tr('block_slots_desc'),
+            onTap: () {
+              if (_salonId != null) {
+                Navigator.pushNamed(context, '/salon/slot-blocking', arguments: _salonId);
+              }
+            },
+          ),
+          _ProfileMenuTile(
             icon: Icons.auto_awesome,
             title: l.tr('smart_scheduling'),
             subtitle: l.tr('smart_scheduling_desc'),
@@ -356,6 +366,16 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
           const SizedBox(height: 20),
           Text(l.tr('engagement'), style: AppTextStyles.h4),
           const SizedBox(height: 12),
+          _ProfileMenuTile(
+            icon: Icons.analytics,
+            title: l.tr('analytics'),
+            subtitle: l.tr('analytics_desc'),
+            onTap: () {
+              if (_salonId != null) {
+                Navigator.pushNamed(context, '/salon/analytics', arguments: _salonId);
+              }
+            },
+          ),
           _ProfileMenuTile(
             icon: Icons.chat_outlined,
             title: l.tr('chat_messages'),

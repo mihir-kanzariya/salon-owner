@@ -319,6 +319,28 @@ class AppTranslations {
     'smart_scheduling_desc': 'Offer discounts on gap-filling slots',
     'smart_slot_discount_label': 'Discount percentage',
     'smart_slot_enabled': 'Enable Smart Pricing',
+
+    // === Analytics & Slot Blocking ===
+    'analytics': 'Analytics & Reports',
+    'analytics_desc': 'Revenue, bookings, and performance insights',
+    'total_bookings_stat': 'Total Bookings',
+    'completion_rate': 'Completion Rate',
+    'avg_booking_value': 'Avg Booking Value',
+    'top_services': 'Top Services',
+    'top_customers': 'Top Customers',
+    'visits': 'visits',
+    'custom': 'Custom',
+    'block_slots': 'Block Time Slots',
+    'block_slots_desc': 'Block slots for breaks or personal time',
+    'add_block': 'Block Slot',
+    'block_reason': 'Reason (optional)',
+    'block_start': 'Start Time',
+    'block_end': 'End Time',
+    'one_time': 'One-time',
+    'recurring': 'Recurring Weekly',
+    'no_blocks': 'No blocked slots for this date',
+    'block_added': 'Time slot blocked',
+    'block_removed': 'Block removed',
   };
 
   // === GUJARATI (Transliterated — same pronunciation as English) ===
@@ -635,5 +657,27 @@ class AppTranslations {
     'smart_scheduling_desc': 'ગેપ ભરતા સ્લોટ પર ડિસ્કાઉન્ટ ઓફર',
     'smart_slot_discount_label': 'ડિસ્કાઉન્ટ ટકાવારી',
     'smart_slot_enabled': 'સ્માર્ટ પ્રાઇસિંગ ચાલુ',
+
+    // === Analytics & Slot Blocking ===
+    'analytics': 'એનાલિટિક્સ & રિપોર્ટ્સ',
+    'analytics_desc': 'રેવન્યૂ, બુકિંગ્સ અને પરફોર્મન્સ',
+    'total_bookings_stat': 'ટોટલ બુકિંગ્સ',
+    'completion_rate': 'કમ્પ્લીશન રેટ',
+    'avg_booking_value': 'એવરેજ બુકિંગ વેલ્યૂ',
+    'top_services': 'ટોપ સર્વિસેસ',
+    'top_customers': 'ટોપ કસ્ટમર્સ',
+    'visits': 'વિઝિટ્સ',
+    'custom': 'કસ્ટમ',
+    'block_slots': 'ટાઇમ સ્લોટ બ્લોક',
+    'block_slots_desc': 'બ્રેક અથવા પર્સનલ ટાઇમ માટે સ્લોટ બ્લોક',
+    'add_block': 'સ્લોટ બ્લોક',
+    'block_reason': 'રીઝન (ઓપ્શનલ)',
+    'block_start': 'સ્ટાર્ટ ટાઇમ',
+    'block_end': 'એન્ડ ટાઇમ',
+    'one_time': 'વન-ટાઇમ',
+    'recurring': 'વીકલી રિકરિંગ',
+    'no_blocks': 'આ ડેટ માટે કોઈ બ્લોક નથી',
+    'block_added': 'ટાઇમ સ્લોટ બ્લોક થયો',
+    'block_removed': 'બ્લોક દૂર થયો',
   };
 }

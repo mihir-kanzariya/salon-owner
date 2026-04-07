@@ -30,6 +30,8 @@ import 'features/salon/profile/presentation/screens/operating_hours_screen.dart'
 import 'features/salon/profile/presentation/screens/gallery_screen.dart';
 import 'features/salon/profile/presentation/screens/amenities_screen.dart';
 import 'features/salon/incentive/presentation/screens/incentive_screen.dart';
+import 'features/salon/analytics/presentation/screens/analytics_screen.dart';
+import 'features/salon/bookings/presentation/screens/slot_blocking_screen.dart';
 import 'features/chat/presentation/screens/chat_list_screen.dart';
 import 'services/supabase_chat_service.dart';
 import 'services/notification_service.dart';
@@ -222,6 +224,14 @@ class HeloHairBusinessApp extends StatelessWidget {
         final salonId = settings.arguments as String? ?? '';
         if (salonId.isEmpty) return _notFoundRoute();
         return SlidePageRoute(child: IncentiveScreen(salonId: salonId));
+      case '/salon/analytics':
+        final salonId = settings.arguments as String? ?? '';
+        if (salonId.isEmpty) return _notFoundRoute();
+        return SlidePageRoute(child: AnalyticsScreen(salonId: salonId));
+      case '/salon/slot-blocking':
+        final salonId = settings.arguments as String? ?? '';
+        if (salonId.isEmpty) return _notFoundRoute();
+        return SlidePageRoute(child: SlotBlockingScreen(salonId: salonId));
 
       default:
         return _notFoundRoute();
