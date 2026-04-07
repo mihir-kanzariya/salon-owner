@@ -313,6 +313,12 @@ class AppTranslations {
     'token': 'Token',
     'availability': 'Availability',
     'earnings_appear_here': 'Your earnings from bookings will appear here',
+
+    // === Smart Scheduling ===
+    'smart_scheduling': 'Smart Scheduling',
+    'smart_scheduling_desc': 'Offer discounts on gap-filling slots',
+    'smart_slot_discount_label': 'Discount percentage',
+    'smart_slot_enabled': 'Enable Smart Pricing',
   };
 
   // === GUJARATI (Transliterated — same pronunciation as English) ===
@@ -623,5 +629,11 @@ class AppTranslations {
     'token': 'ટોકન',
     'availability': 'ઉપલબ્ધતા',
     'earnings_appear_here': 'બુકિંગ્સમાંથી તમારી અર્નિંગ્સ અહીં દેખાશે',
+
+    // === Smart Scheduling ===
+    'smart_scheduling': 'સ્માર્ટ શેડ્યુલિંગ',
+    'smart_scheduling_desc': 'ગેપ ભરતા સ્લોટ પર ડિસ્કાઉન્ટ ઓફર',
+    'smart_slot_discount_label': 'ડિસ્કાઉન્ટ ટકાવારી',
+    'smart_slot_enabled': 'સ્માર્ટ પ્રાઇસિંગ ચાલુ',
   };
 }

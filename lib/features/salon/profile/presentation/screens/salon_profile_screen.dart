@@ -347,6 +347,12 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
               }
             },
           ),
+          _ProfileMenuTile(
+            icon: Icons.auto_awesome,
+            title: l.tr('smart_scheduling'),
+            subtitle: l.tr('smart_scheduling_desc'),
+            onTap: () => _showSmartSchedulingDialog(l),
+          ),
           const SizedBox(height: 20),
           Text(l.tr('engagement'), style: AppTextStyles.h4),
           const SizedBox(height: 12),
@@ -424,6 +430,90 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
             },
           ),
         ],
+      ),
+    );
+  }
+
+  void _showSmartSchedulingDialog(LocaleProvider l) {
+    final settings = _salon['booking_settings'] ?? {};
+    bool enabled = settings['smart_slot_enabled'] ?? true;
+    double discount = (settings['smart_slot_discount'] ?? 10).toDouble();
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Row(children: [
+            const Icon(Icons.auto_awesome, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text(l.tr('smart_scheduling'), style: AppTextStyles.h4),
+          ]),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(l.tr('smart_scheduling_desc'), style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+              const SizedBox(height: 20),
+              SwitchListTile(
+                title: Text(l.tr('smart_slot_enabled'), style: AppTextStyles.bodyMedium),
+                value: enabled,
+                activeColor: AppColors.primary,
+                onChanged: (v) => setDialogState(() => enabled = v),
+                contentPadding: EdgeInsets.zero,
+              ),
+              if (enabled) ...[
+                const SizedBox(height: 12),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(l.tr('smart_slot_discount_label'), style: AppTextStyles.bodyMedium),
+                    Text('${discount.toInt()}%', style: AppTextStyles.h4.copyWith(color: AppColors.primary)),
+                  ],
+                ),
+                Slider(
+                  value: discount,
+                  min: 5,
+                  max: 25,
+                  divisions: 4,
+                  label: '${discount.toInt()}%',
+                  activeColor: AppColors.primary,
+                  onChanged: (v) => setDialogState(() => discount = v),
+                ),
+                Text('5% — 25%', style: AppTextStyles.caption),
+              ],
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.tr('cancel'))),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(ctx);
+                try {
+                  await _api.put('${ApiConfig.salonDetail}/$_salonId', body: {
+                    'booking_settings': {
+                      'smart_slot_enabled': enabled,
+                      'smart_slot_discount': discount.toInt(),
+                    },
+                  });
+                  _loadSalonProfile();
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Smart scheduling updated'), backgroundColor: AppColors.success),
+                    );
+                  }
+                } catch (_) {
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Failed to update'), backgroundColor: AppColors.error),
+                    );
+                  }
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.primary),
+              child: Text(l.tr('save'), style: const TextStyle(color: AppColors.white)),
+            ),
+          ],
+        ),
       ),
     );
   }
