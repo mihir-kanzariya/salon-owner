@@ -393,6 +393,11 @@ class AppTranslations {
     'no_blocks': 'No blocked slots for this date',
     'block_added': 'Time slot blocked',
     'block_removed': 'Block removed',
+    'schedule_calendar': 'Schedule Calendar',
+    'schedule_calendar_desc': 'Visual timeline of all bookings',
+    'add_walk_in': 'Add Walk-In',
+    'walk_in': 'Walk-In',
+    'no_stylists_today': 'No stylists working today',
   };
 
   // === GUJARATI (Transliterated — same pronunciation as English) ===
@@ -783,5 +788,10 @@ class AppTranslations {
     'no_blocks': 'આ ડેટ માટે કોઈ બ્લોક નથી',
     'block_added': 'ટાઇમ સ્લોટ બ્લોક થયો',
     'block_removed': 'બ્લોક દૂર થયો',
+    'schedule_calendar': 'શેડ્યૂલ કેલેન્ડર',
+    'schedule_calendar_desc': 'બધી બુકિંગ્સની ટાઇમલાઇન',
+    'add_walk_in': 'વોક-ઇન ઉમેરો',
+    'walk_in': 'વોક-ઇન',
+    'no_stylists_today': 'આજે કોઈ સ્ટાઇલિસ્ટ કામ પર નથી',
   };
 }

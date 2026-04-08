@@ -358,6 +358,16 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
             },
           ),
           _ProfileMenuTile(
+            icon: Icons.calendar_month,
+            title: l.tr('schedule_calendar'),
+            subtitle: l.tr('schedule_calendar_desc'),
+            onTap: () {
+              if (_salonId != null) {
+                Navigator.pushNamed(context, '/salon/calendar', arguments: _salonId);
+              }
+            },
+          ),
+          _ProfileMenuTile(
             icon: Icons.auto_awesome,
             title: l.tr('smart_scheduling'),
             subtitle: l.tr('smart_scheduling_desc'),
