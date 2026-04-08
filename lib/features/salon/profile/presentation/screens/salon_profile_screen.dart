@@ -469,39 +469,97 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
             const SizedBox(width: 8),
             Text(l.tr('smart_scheduling'), style: AppTextStyles.h4),
           ]),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(l.tr('smart_scheduling_desc'), style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
-              const SizedBox(height: 20),
-              SwitchListTile(
-                title: Text(l.tr('smart_slot_enabled'), style: AppTextStyles.bodyMedium),
-                value: enabled,
-                activeColor: AppColors.primary,
-                onChanged: (v) => setDialogState(() => enabled = v),
-                contentPadding: EdgeInsets.zero,
-              ),
-              if (enabled) ...[
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(l.tr('smart_slot_discount_label'), style: AppTextStyles.bodyMedium),
-                    Text('${discount.toInt()}%', style: AppTextStyles.h4.copyWith(color: AppColors.primary)),
-                  ],
-                ),
-                Slider(
-                  value: discount,
-                  min: 5,
-                  max: 25,
-                  divisions: 4,
-                  label: '${discount.toInt()}%',
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(l.tr('smart_scheduling_desc'), style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary)),
+                const SizedBox(height: 20),
+                SwitchListTile(
+                  title: Text(l.tr('smart_slot_enabled'), style: AppTextStyles.bodyMedium),
+                  value: enabled,
                   activeColor: AppColors.primary,
-                  onChanged: (v) => setDialogState(() => discount = v),
+                  onChanged: (v) => setDialogState(() => enabled = v),
+                  contentPadding: EdgeInsets.zero,
                 ),
-                Text('5% — 25%', style: AppTextStyles.caption),
+                if (enabled) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(l.tr('smart_slot_discount_label'), style: AppTextStyles.bodyMedium),
+                      Text('${discount.toInt()}%', style: AppTextStyles.h4.copyWith(color: AppColors.primary)),
+                    ],
+                  ),
+                  Slider(
+                    value: discount,
+                    min: 5,
+                    max: 25,
+                    divisions: 4,
+                    label: '${discount.toInt()}%',
+                    activeColor: AppColors.primary,
+                    onChanged: (v) => setDialogState(() => discount = v),
+                  ),
+                  Text('5% — 25%', style: AppTextStyles.caption),
+                ],
+                const SizedBox(height: 20),
+                // Explanation section
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.15)),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(l.tr('smart_how_it_works'), style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 8),
+                      _smartBenefitRow(l.tr('smart_benefit_1')),
+                      const SizedBox(height: 6),
+                      _smartBenefitRow(l.tr('smart_benefit_2')),
+                      const SizedBox(height: 6),
+                      _smartBenefitRow(l.tr('smart_benefit_3')),
+                      const SizedBox(height: 6),
+                      _smartBenefitRow(l.tr('smart_benefit_4')),
+                    ],
+                  ),
+                ),
+                // Stats preview when enabled
+                if (enabled) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: AppColors.successLight,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Current discount: ${discount.toInt()}% off on smart slots',
+                          style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                        ),
+                        const SizedBox(height: 6),
+                        Builder(builder: (_) {
+                          const examplePrice = 300;
+                          final discounted = (examplePrice * (1 - discount / 100)).round();
+                          return Text(
+                            l.tr('smart_example')
+                                .replaceAll('{price}', '$examplePrice')
+                                .replaceAll('{discounted}', '$discounted'),
+                            style: AppTextStyles.bodySmall.copyWith(color: AppColors.textSecondary),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
           actions: [
             TextButton(onPressed: () => Navigator.pop(ctx), child: Text(l.tr('cancel'))),
@@ -535,6 +593,16 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
           ],
         ),
       ),
+    );
+  }
+
+  Widget _smartBenefitRow(String text) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('\u2022 ', style: TextStyle(fontSize: 13, height: 1.4)),
+        Expanded(child: Text(text, style: AppTextStyles.bodySmall.copyWith(height: 1.4))),
+      ],
     );
   }
 

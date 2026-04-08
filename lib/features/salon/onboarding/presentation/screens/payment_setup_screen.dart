@@ -113,22 +113,32 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
       );
       final body = jsonDecode(res.body);
       if (res.statusCode == 201 || res.statusCode == 200) {
-        _showSnackBar('Payment setup submitted successfully!', isSuccess: true);
+        _showSubmissionConfirmation(
+          businessName: _businessNameCtrl.text.trim(),
+          pan: _panCtrl.text.trim().toUpperCase(),
+          ifsc: _ifscCtrl.text.trim().toUpperCase(),
+        );
         await _loadExistingAccount();
       } else {
         final msg = body['message'] ?? 'Failed to submit';
         // Map backend errors to user-friendly messages
         String userMsg;
-        if (msg.contains('Access Denied')) {
-          userMsg = 'Razorpay Route is not yet activated on your account. Please contact support or request Route access from your Razorpay dashboard.';
+        if (msg.contains('profile field is required')) {
+          userMsg = 'Please ensure your salon has a complete address in the profile.';
+        } else if (msg.contains('The email has already been used')) {
+          userMsg = 'An account with this email already exists. Try a different email.';
         } else if (msg.contains('Invalid PAN')) {
-          userMsg = 'Please enter a valid PAN number (e.g., ABCDE1234F)';
+          userMsg = 'Please check your PAN number format (e.g., ABCDE1234F)';
         } else if (msg.contains('Invalid IFSC') || msg.contains('ifsc')) {
-          userMsg = 'Please enter a valid IFSC code (e.g., HDFC0001234)';
+          userMsg = 'Please check your IFSC code format (e.g., HDFC0001234)';
+        } else if (msg.contains('postal_code')) {
+          userMsg = 'Please update your salon\'s pincode in salon settings first.';
         } else if (msg.contains('account_number') || msg.contains('bank')) {
           userMsg = 'Please check your bank account details and try again';
         } else if (msg.contains('already exists') || msg.contains('duplicate')) {
           userMsg = 'A payment account already exists for this salon. Please refresh.';
+        } else if (msg.contains('Access Denied')) {
+          userMsg = 'Razorpay Route is not yet activated on your account. Please contact support or request Route access from your Razorpay dashboard.';
         } else {
           userMsg = msg;
         }
@@ -178,6 +188,87 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen> {
       }
     } catch (_) {}
     if (mounted) setState(() => _isLoading = false);
+  }
+
+  String _maskPan(String pan) {
+    if (pan.length < 4) return pan;
+    return '${'*' * (pan.length - 4)}${pan.substring(pan.length - 4)}';
+  }
+
+  void _showSubmissionConfirmation({
+    required String businessName,
+    required String pan,
+    required String ifsc,
+  }) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: AppColors.successLight,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.check, color: AppColors.success, size: 24),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text('Payment Setup Submitted', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
+            ),
+          ],
+        ),
+        content: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: AppColors.background,
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Submitted Details', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14, color: AppColors.textSecondary)),
+              const SizedBox(height: 12),
+              _confirmationRow('Business Name', businessName),
+              const SizedBox(height: 8),
+              _confirmationRow('PAN', _maskPan(pan)),
+              const SizedBox(height: 8),
+              _confirmationRow('Bank IFSC', ifsc),
+              const SizedBox(height: 16),
+              const Text(
+                'KYC verification usually takes 1-2 business days.',
+                style: TextStyle(fontSize: 12, color: AppColors.textMuted),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('OK'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _confirmationRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+        Flexible(child: Text(value, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600), textAlign: TextAlign.end)),
+      ],
+    );
   }
 
   void _showSnackBar(String msg, {bool isSuccess = false}) {

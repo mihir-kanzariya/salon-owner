@@ -319,6 +319,12 @@ class AppTranslations {
     'smart_scheduling_desc': 'Offer discounts on gap-filling slots',
     'smart_slot_discount_label': 'Discount percentage',
     'smart_slot_enabled': 'Enable Smart Pricing',
+    'smart_how_it_works': 'How it works:',
+    'smart_benefit_1': 'Customers see discounted slots that fill gaps in your schedule',
+    'smart_benefit_2': 'You get more bookings per day with fewer empty hours',
+    'smart_benefit_3': 'Discount only applies to gap-filling time slots',
+    'smart_benefit_4': 'Regular slots keep their full price',
+    'smart_example': 'Example: \u20B9{price} service \u2192 \u20B9{discounted} for smart slots',
 
     // === Analytics & Slot Blocking ===
     'analytics': 'Analytics & Reports',
@@ -657,6 +663,12 @@ class AppTranslations {
     'smart_scheduling_desc': 'ગેપ ભરતા સ્લોટ પર ડિસ્કાઉન્ટ ઓફર',
     'smart_slot_discount_label': 'ડિસ્કાઉન્ટ ટકાવારી',
     'smart_slot_enabled': 'સ્માર્ટ પ્રાઇસિંગ ચાલુ',
+    'smart_how_it_works': 'કેવી રીતે કામ કરે:',
+    'smart_benefit_1': 'કસ્ટમર્સ ગેપ ભરતા ડિસ્કાઉન્ટ સ્લોટ જુએ છે',
+    'smart_benefit_2': 'દિવસમાં વધુ બુકિંગ્સ, ઓછા ખાલી કલાકો',
+    'smart_benefit_3': 'ડિસ્કાઉન્ટ ફક્ત ગેપ-ફિલિંગ સ્લોટ પર લાગે',
+    'smart_benefit_4': 'રેગ્યુલર સ્લોટ ફુલ પ્રાઇસ રાખે',
+    'smart_example': 'ઉદાહરણ: \u20B9{price} સર્વિસ \u2192 \u20B9{discounted} સ્માર્ટ સ્લોટ',
 
     // === Analytics & Slot Blocking ===
     'analytics': 'એનાલિટિક્સ & રિપોર્ટ્સ',
