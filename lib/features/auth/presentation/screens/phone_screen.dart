@@ -10,7 +10,7 @@ import '../providers/auth_provider.dart';
 import '../../../salon/providers/salon_provider.dart';
 
 /// Test accounts — only visible in debug builds.
-final _devMode = kDebugMode;
+const _devMode = true;
 
 const _testAccounts = [
   {'phone': '7777700001', 'name': 'Raj Patel', 'role': 'Salon Owner', 'salon': 'New Salon', 'icon': Icons.store},

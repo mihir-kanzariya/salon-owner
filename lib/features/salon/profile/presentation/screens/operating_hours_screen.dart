@@ -146,6 +146,18 @@ class _OperatingHoursScreenState extends State<OperatingHoursScreen> {
   }
 
   Future<void> _saveHours() async {
+    // Validate that close time is after open time for open days
+    for (final dayHour in _hours) {
+      if (dayHour.isClosed) continue;
+      final openMinutes = dayHour.openTime.hour * 60 + dayHour.openTime.minute;
+      final closeMinutes = dayHour.closeTime.hour * 60 + dayHour.closeTime.minute;
+      if (closeMinutes <= openMinutes) {
+        final label = _dayLabels[dayHour.day] ?? dayHour.day;
+        SnackbarUtils.showError(context, '$label: Close time must be after open time');
+        return;
+      }
+    }
+
     try {
       setState(() => _isSaving = true);
 

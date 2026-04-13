@@ -26,6 +26,7 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   final ApiService _api = ApiService();
   bool _isLoading = true;
+  bool _hasError = false;
   Map<String, dynamic> _stats = {};
   List<dynamic> _todayBookings = [];
   String? _activeSalonId;
@@ -57,7 +58,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _loadDashboard() async {
     try {
-      setState(() => _isLoading = true);
+      setState(() { _isLoading = true; _hasError = false; });
 
       final sp = context.read<SalonProvider>();
       _activeSalonId = sp.salonId;
@@ -78,17 +79,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
         } catch (_) {}
 
         // Load today's bookings
-        final bookingParams = <String, dynamic>{
-          'date': DateTime.now().toIso8601String().split('T')[0],
-        };
-        if (sp.isStylist && sp.memberId != null) {
-          bookingParams['stylist_member_id'] = sp.memberId!;
-        }
-        final bookingsRes = await _api.get(
-          '${ApiConfig.bookings}/salon/$_activeSalonId',
-          queryParams: bookingParams,
-        );
-        _todayBookings = bookingsRes['data'] ?? [];
+        try {
+          final bookingParams = <String, dynamic>{
+            'date': DateTime.now().toIso8601String().split('T')[0],
+          };
+          if (sp.isStylist && sp.memberId != null) {
+            bookingParams['stylist_member_id'] = sp.memberId!;
+          }
+          final bookingsRes = await _api.get(
+            '${ApiConfig.bookings}/salon/$_activeSalonId',
+            queryParams: bookingParams,
+          );
+          _todayBookings = bookingsRes['data'] ?? [];
+        } catch (_) {}
 
         // Load salon details for KYC status
         try {
@@ -142,7 +145,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       setState(() => _isLoading = false);
     } catch (e) {
       if (mounted) ErrorHandler.handle(context, e);
-      setState(() => _isLoading = false);
+      setState(() { _isLoading = false; _hasError = true; });
     }
   }
 
@@ -211,6 +214,29 @@ class _DashboardScreenState extends State<DashboardScreen> {
       ),
       body: _isLoading
           ? const DashboardSkeleton()
+          : _hasError
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                      const SizedBox(height: 12),
+                      Text(l.tr('error_occurred'), style: AppTextStyles.bodyMedium),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: _loadDashboard,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: Text(l.tr('retry')),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
           : RefreshIndicator(
               onRefresh: _loadDashboard,
               child: SingleChildScrollView(

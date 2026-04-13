@@ -365,7 +365,8 @@ class _AddStylistScreenState extends State<AddStylistScreen> {
   }
 
   Widget _buildPhotoSection() {
-    final name = _foundUser?['name'] ?? 'U';
+    final rawName = _foundUser?['name']?.toString() ?? '';
+    final name = rawName.isNotEmpty ? rawName : 'U';
     final photoUrl = _profilePhotoUrl;
 
     return Center(
@@ -536,7 +537,7 @@ class _AddStylistScreenState extends State<AddStylistScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        (_foundUser!['name'] ?? 'U')[0].toUpperCase(),
+                        ((_foundUser!['name']?.toString() ?? 'U').isEmpty ? 'U' : _foundUser!['name'].toString())[0].toUpperCase(),
                         style: const TextStyle(
                           fontSize: 18,
                           fontWeight: FontWeight.w700,

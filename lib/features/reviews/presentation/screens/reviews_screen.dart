@@ -21,6 +21,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
   final ApiService _api = ApiService();
   List<dynamic> _reviews = [];
   bool _isLoading = true;
+  bool _hasError = false;
 
   // Pagination state
   int _page = 1;
@@ -54,6 +55,7 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
     try {
       setState(() {
         _isLoading = true;
+        _hasError = false;
         _page = 1;
         _hasMore = true;
       });
@@ -81,7 +83,122 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       });
     } catch (e) {
       if (mounted) ErrorHandler.handle(context, e);
-      setState(() => _isLoading = false);
+      setState(() {
+        _isLoading = false;
+        _hasError = true;
+      });
+    }
+  }
+
+  Future<void> _showReplySheet(String reviewId) async {
+    final controller = TextEditingController();
+    bool isSending = false;
+
+    try {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 16,
+                right: 16,
+                top: 20,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Reply to Review', style: AppTextStyles.h4),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: controller,
+                    maxLines: 3,
+                    maxLength: 500,
+                    decoration: InputDecoration(
+                      hintText: 'Write your reply...',
+                      hintStyle: AppTextStyles.caption,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: const BorderSide(color: AppColors.primary),
+                      ),
+                      contentPadding: const EdgeInsets.all(14),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: isSending
+                          ? null
+                          : () async {
+                              final text = controller.text.trim();
+                              if (text.isEmpty) return;
+                              setSheetState(() => isSending = true);
+                              try {
+                                await _api.post(
+                                  '${ApiConfig.reviews}/$reviewId/reply',
+                                  body: {'reply': text},
+                                );
+                                if (ctx.mounted) Navigator.pop(ctx);
+                                _load();
+                              } catch (e) {
+                                setSheetState(() => isSending = false);
+                                if (ctx.mounted) {
+                                  ScaffoldMessenger.of(ctx).showSnackBar(
+                                    SnackBar(
+                                      content: Text(e.toString().replaceAll('Exception: ', '')),
+                                      backgroundColor: AppColors.error,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        elevation: 0,
+                      ),
+                      child: isSending
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: AppColors.white,
+                              ),
+                            )
+                          : const Text('Send Reply',
+                              style: TextStyle(fontWeight: FontWeight.w600)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+    } finally {
+      controller.dispose();
     }
   }
 
@@ -129,6 +246,32 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
       appBar: AppBar(title: const Text('Reviews')),
       body: _isLoading
           ? const SkeletonList(child: ReviewCardSkeleton())
+          : _hasError
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                      const SizedBox(height: 12),
+                      Text('Failed to load reviews', style: AppTextStyles.bodyMedium),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() => _hasError = false);
+                          _load();
+                        },
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
           : _reviews.isEmpty
               ? const EmptyStateWidget(
                   icon: Icons.rate_review_outlined,
@@ -234,6 +377,22 @@ class _ReviewsScreenState extends State<ReviewsScreen> {
                                       const SizedBox(height: 4),
                                       Text(review['reply'], style: AppTextStyles.bodySmall),
                                     ],
+                                  ),
+                                ),
+                              ] else ...[
+                                const SizedBox(height: 8),
+                                Align(
+                                  alignment: Alignment.centerRight,
+                                  child: TextButton.icon(
+                                    onPressed: (review['id'] != null && review['id'].toString().isNotEmpty)
+                                        ? () => _showReplySheet(review['id'].toString())
+                                        : null,
+                                    icon: const Icon(Icons.reply, size: 16),
+                                    label: const Text('Reply', style: TextStyle(fontWeight: FontWeight.w600)),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: AppColors.primary,
+                                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                                    ),
                                   ),
                                 ),
                               ],

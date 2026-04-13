@@ -56,7 +56,7 @@ class _SlotBlockingScreenState extends State<SlotBlockingScreen> {
   void _generateWeekDates() {
     final now = DateTime.now();
     _weekDates.clear();
-    for (int i = 0; i < 14; i++) {
+    for (int i = 0; i < 30; i++) {
       _weekDates.add(DateTime(now.year, now.month, now.day).add(Duration(days: i)));
     }
   }

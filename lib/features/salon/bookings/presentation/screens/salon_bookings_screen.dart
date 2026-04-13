@@ -2,6 +2,7 @@ import '../../../../../core/i18n/locale_provider.dart';
 import '../../../../../core/widgets/language_toggle.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../../core/constants/app_colors.dart';
 import '../../../../../core/constants/app_text_styles.dart';
 import '../../../../../core/widgets/empty_state_widget.dart';
@@ -27,6 +28,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
   List<dynamic> _upcomingBookings = [];
   List<dynamic> _pastBookings = [];
   bool _isLoading = true;
+  bool _hasError = false;
 
   // Pagination state for past bookings
   int _pastPage = 1;
@@ -60,7 +62,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
 
   Future<void> _loadData() async {
     try {
-      setState(() => _isLoading = true);
+      setState(() { _isLoading = true; _hasError = false; });
 
       final sp = context.read<SalonProvider>();
       _salonId = sp.salonId;
@@ -99,7 +101,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
 
       setState(() => _isLoading = false);
     } catch (_) {
-      setState(() => _isLoading = false);
+      setState(() { _isLoading = false; _hasError = true; });
     }
   }
 
@@ -142,6 +144,18 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
 
   Future<void> _confirmCollectPayment(String bookingId, String customerName, dynamic totalAmount) async {
     final amount = totalAmount is num ? totalAmount.toDouble() : double.tryParse(totalAmount.toString()) ?? 0;
+    if (amount <= 0) {
+      if (mounted) {
+        final l = context.read<LocaleProvider>();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l.tr('invalid_amount')),
+            backgroundColor: AppColors.error,
+          ),
+        );
+      }
+      return;
+    }
     // Get commission from salon data (falls back to platform default 10%)
     final salonData = context.read<SalonProvider>().salonData;
     final commissionPercent = double.tryParse(salonData?['commission_override']?.toString() ?? '') ?? 10.0;
@@ -272,12 +286,123 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
     }
   }
 
-  Future<void> _updateBookingStatus(String bookingId, String status) async {
+  Future<void> _showCancelReasonDialog(String bookingId) async {
+    String? selectedReason;
+    final otherController = TextEditingController();
+    final reasons = [
+      'Customer requested',
+      'Stylist unavailable',
+      'Salon closed',
+      'Double booking',
+      'Other',
+    ];
+
+    String? result;
     try {
+    result = await showDialog<String>(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text('Cancel Booking', style: AppTextStyles.h4),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Select a reason for cancellation:',
+                      style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textSecondary)),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedReason,
+                    decoration: InputDecoration(
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: AppColors.border),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                    ),
+                    hint: const Text('Select reason'),
+                    items: reasons.map((r) => DropdownMenuItem(value: r, child: Text(r, style: AppTextStyles.bodyMedium))).toList(),
+                    onChanged: (v) => setDialogState(() => selectedReason = v),
+                  ),
+                  if (selectedReason == 'Other') ...[
+                    const SizedBox(height: 12),
+                    TextField(
+                      controller: otherController,
+                      maxLines: 2,
+                      onChanged: (_) => setDialogState(() {}),
+                      decoration: InputDecoration(
+                        hintText: 'Enter reason...',
+                        hintStyle: AppTextStyles.caption,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: AppColors.border),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text('Back', style: AppTextStyles.labelLarge.copyWith(color: AppColors.textSecondary)),
+                ),
+                ElevatedButton(
+                  onPressed: selectedReason == null ||
+                          (selectedReason == 'Other' && otherController.text.trim().isEmpty)
+                      ? null
+                      : () {
+                          final reason = selectedReason == 'Other'
+                              ? otherController.text.trim()
+                              : selectedReason!;
+                          Navigator.pop(ctx, reason);
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.error,
+                    foregroundColor: AppColors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    elevation: 0,
+                  ),
+                  child: const Text('Cancel Booking', style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+    } finally {
+      otherController.dispose();
+    }
+
+    if (result != null) {
+      _updateBookingStatus(bookingId, 'cancelled', cancellationReason: result);
+    }
+  }
+
+  Future<void> _updateBookingStatus(String bookingId, String status, {String? cancellationReason}) async {
+    try {
+      final body = <String, dynamic>{'status': status};
+      if (cancellationReason != null) {
+        body['cancellation_reason'] = cancellationReason;
+      }
       await _api.put(
         '${ApiConfig.bookings}/$bookingId/status',
-        body: {'status': status},
+        body: body,
       );
+      if (mounted) {
+        final l = context.read<LocaleProvider>();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${l.tr('booking')} ${_formatStatus(status).toLowerCase()}'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      }
       _loadData();
     } catch (e) {
       if (mounted) {
@@ -343,6 +468,32 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
       ),
       body: _isLoading
           ? const SkeletonList(child: BookingCardSkeleton())
+          : _hasError
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                      const SizedBox(height: 12),
+                      Text('Failed to load bookings', style: AppTextStyles.bodyMedium),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: () {
+                          setState(() => _hasError = false);
+                          _loadData();
+                        },
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
           : TabBarView(
               controller: _tabController,
               children: [
@@ -436,6 +587,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
   Widget _buildBookingCard(Map<String, dynamic> booking) {
     final customer = booking['customer'] as Map<String, dynamic>?;
     final customerName = customer?['name'] ?? 'Customer';
+    final customerPhone = customer?['phone'] as String?;
     final initial = customerName.isNotEmpty ? customerName[0].toUpperCase() : 'C';
     final status = booking['status'] as String? ?? 'pending';
     final bookingId = booking['id']?.toString() ?? '';
@@ -494,8 +646,23 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
                     ],
                   ),
                 ),
+                // Call customer button
+                if (customerPhone != null && customerPhone.isNotEmpty)
+                  IconButton(
+                    icon: const Icon(Icons.phone_outlined, size: 20),
+                    color: AppColors.success,
+                    tooltip: 'Call $customerName',
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                    onPressed: () async {
+                      final uri = Uri.parse('tel:$customerPhone');
+                      if (await canLaunchUrl(uri)) {
+                        await launchUrl(uri);
+                      }
+                    },
+                  ),
                 // Notify button for pending/confirmed
-                if (status == 'pending' || status == 'confirmed')
+                if (bookingId.isNotEmpty && (status == 'pending' || status == 'confirmed'))
                   IconButton(
                     icon: const Icon(Icons.notifications_active_outlined, size: 20),
                     color: AppColors.accent,
@@ -563,7 +730,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
             ),
 
             // Action buttons
-            if (status == 'pending' || status == 'confirmed' || status == 'in_progress') ...[
+            if (bookingId.isNotEmpty && (status == 'pending' || status == 'confirmed' || status == 'in_progress')) ...[
               const SizedBox(height: 14),
               const Divider(height: 1, color: AppColors.border),
               const SizedBox(height: 12),
@@ -603,7 +770,7 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
         children: [
           Expanded(
             child: OutlinedButton(
-              onPressed: () => _updateBookingStatus(bookingId, 'cancelled'),
+              onPressed: () => _showCancelReasonDialog(bookingId),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.error,
                 side: const BorderSide(color: AppColors.error),

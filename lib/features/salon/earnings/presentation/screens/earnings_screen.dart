@@ -2,6 +2,7 @@ import '../../../../../config/api_config.dart';
 import '../../../../../core/i18n/locale_provider.dart';
 import '../../../../../core/widgets/language_toggle.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../../../../core/constants/app_colors.dart';
 import '../../../../../core/constants/app_text_styles.dart';
@@ -22,9 +23,11 @@ class EarningsScreen extends StatefulWidget {
 class _EarningsScreenState extends State<EarningsScreen> {
   final ApiService _api = ApiService();
   bool _isLoading = true;
+  bool _hasError = false;
   Map<String, dynamic> _earnings = {};
   Map<String, dynamic> _wallet = {};
   List<dynamic> _transactions = [];
+  List<Map<String, dynamic>> _dailyEarnings = [];
 
   @override
   void initState() {
@@ -33,11 +36,42 @@ class _EarningsScreenState extends State<EarningsScreen> {
   }
 
   Future<void> _loadData() async {
-    setState(() => _isLoading = true);
-    // Load wallet first, then earnings (earnings uses wallet data)
-    await _loadWallet();
-    await _loadEarnings();
-    if (mounted) setState(() => _isLoading = false);
+    setState(() {
+      _isLoading = true;
+      _hasError = false;
+    });
+    try {
+      // Load wallet first, then earnings (earnings uses wallet data)
+      await _loadWallet();
+      await _loadEarnings();
+      _computeDailyEarnings();
+      if (mounted) setState(() => _isLoading = false);
+    } catch (_) {
+      if (mounted) setState(() { _isLoading = false; _hasError = true; });
+    }
+  }
+
+  void _computeDailyEarnings() {
+    // Build last 7 days from transactions
+    final now = DateTime.now();
+    final Map<String, double> dayMap = {};
+    for (int i = 6; i >= 0; i--) {
+      final d = now.subtract(Duration(days: i));
+      dayMap[DateFormat('yyyy-MM-dd').format(d)] = 0;
+    }
+    for (final t in _transactions) {
+      final dateStr = t['createdAt'] ?? t['created_at'] ?? t['date'] ?? '';
+      if (dateStr is String && dateStr.isNotEmpty) {
+        try {
+          final key = DateFormat('yyyy-MM-dd').format(DateTime.parse(dateStr));
+          if (dayMap.containsKey(key)) {
+            final amount = (t['net_amount'] ?? t['amount'] ?? 0);
+            dayMap[key] = dayMap[key]! + (amount is num ? amount.toDouble() : double.tryParse(amount.toString()) ?? 0);
+          }
+        } catch (_) {}
+      }
+    }
+    _dailyEarnings = dayMap.entries.map((e) => {'date': e.key, 'amount': e.value}).toList();
   }
 
   Future<void> _loadWallet() async {
@@ -103,8 +137,31 @@ class _EarningsScreenState extends State<EarningsScreen> {
       ),
       body: _isLoading
           ? const EarningsSkeleton()
+          : _hasError
+              ? Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48, color: AppColors.error),
+                      const SizedBox(height: 12),
+                      Text('Failed to load earnings', style: AppTextStyles.bodyMedium),
+                      const SizedBox(height: 12),
+                      ElevatedButton.icon(
+                        onPressed: _loadData,
+                        icon: const Icon(Icons.refresh, size: 18),
+                        label: const Text('Retry'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: AppColors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                          elevation: 0,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
           : RefreshIndicator(
-              onRefresh: _loadEarnings,
+              onRefresh: _loadData,
               child: Column(
                 children: [
                   Expanded(
@@ -186,9 +243,35 @@ class _EarningsScreenState extends State<EarningsScreen> {
   }
 
   Widget _buildChartPlaceholder() {
+    final l = context.watch<LocaleProvider>();
+    if (_dailyEarnings.isEmpty) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: AppColors.cardBackground,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: Column(
+          children: [
+            Text(l.tr('earnings_chart'), style: AppTextStyles.h4),
+            const SizedBox(height: 24),
+            Icon(Icons.bar_chart, size: 48, color: AppColors.textMuted),
+            const SizedBox(height: 8),
+            Text(l.tr('no_data'), style: AppTextStyles.caption),
+          ],
+        ),
+      );
+    }
+
+    final maxAmount = _dailyEarnings.fold<double>(
+      0, (prev, e) => (e['amount'] as double) > prev ? (e['amount'] as double) : prev,
+    );
+
     return Container(
       width: double.infinity,
-      height: 200,
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.cardBackground,
         borderRadius: BorderRadius.circular(16),
@@ -202,24 +285,53 @@ class _EarningsScreenState extends State<EarningsScreen> {
         ],
       ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            Icons.bar_chart_rounded,
-            size: 48,
-            color: AppColors.primary.withValues(alpha: 0.3),
-          ),
-          const SizedBox(height: 12),
-          Text(
-            context.watch<LocaleProvider>().tr('earnings_chart'),
-            style: AppTextStyles.labelLarge.copyWith(
-              color: AppColors.textSecondary,
+          Text(l.tr('earnings_chart'), style: AppTextStyles.h4),
+          const SizedBox(height: 16),
+          SizedBox(
+            height: 150,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: _dailyEarnings.map((day) {
+                final amount = day['amount'] as double;
+                final ratio = maxAmount > 0 ? amount / maxAmount : 0.0;
+                final dateStr = day['date'] as String;
+                String label;
+                try {
+                  label = DateFormat('EEE').format(DateTime.parse(dateStr));
+                } catch (_) {
+                  label = dateStr.substring(dateStr.length - 2);
+                }
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (amount > 0)
+                          Text(
+                            '\u20B9${amount.toStringAsFixed(0)}',
+                            style: const TextStyle(fontSize: 9, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        const SizedBox(height: 4),
+                        Container(
+                          height: (ratio * 100).clamp(4.0, 100.0),
+                          decoration: BoxDecoration(
+                            color: amount > 0 ? AppColors.primary : AppColors.border,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(label, style: const TextStyle(fontSize: 10, color: AppColors.textMuted)),
+                      ],
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            context.watch<LocaleProvider>().tr('chart_coming_soon'),
-            style: AppTextStyles.caption,
           ),
         ],
       ),
