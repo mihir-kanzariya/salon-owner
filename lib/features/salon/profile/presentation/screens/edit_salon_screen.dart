@@ -36,7 +36,6 @@ class _EditSalonScreenState extends State<EditSalonScreen> {
 
   String _genderType = 'unisex';
   String? _coverImageUrl;
-  int _advanceBookingDays = 15;
   bool _isLoading = true;
   bool _isSaving = false;
   bool _isUploadingCover = false;
@@ -79,11 +78,6 @@ class _EditSalonScreenState extends State<EditSalonScreen> {
       _pincodeController.text = salon['pincode'] ?? '';
       _genderType = salon['gender_type'] ?? 'unisex';
       _coverImageUrl = salon['cover_image'];
-
-      final bookingSettings = salon['booking_settings'] as Map<String, dynamic>?;
-      if (bookingSettings != null) {
-        _advanceBookingDays = (bookingSettings['advance_booking_days'] as num?)?.toInt() ?? 15;
-      }
 
       final location = salon['location'];
       if (location != null) {
@@ -171,9 +165,6 @@ class _EditSalonScreenState extends State<EditSalonScreen> {
         'state': _stateController.text.trim(),
         'pincode': _pincodeController.text.trim(),
         'gender_type': _genderType,
-        'booking_settings': {
-          'advance_booking_days': _advanceBookingDays,
-        },
       };
 
       if (_latitudeController.text.isNotEmpty &&
@@ -421,10 +412,50 @@ class _EditSalonScreenState extends State<EditSalonScreen> {
                   ),
 
                   const SizedBox(height: 28),
-                  // Booking Settings Section
+                  // Booking Settings — link to dedicated screen
                   _buildSectionHeader('Booking Settings'),
                   const SizedBox(height: 12),
-                  _buildBookingWindowSelector(),
+                  InkWell(
+                    onTap: () {
+                      Navigator.pushNamed(
+                        context,
+                        '/salon/booking-settings',
+                        arguments: widget.salonId,
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(12),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppColors.cardBackground,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.border),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.settings_outlined,
+                              size: 20, color: AppColors.primary),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text('Manage Booking Settings',
+                                    style: AppTextStyles.labelLarge),
+                                const SizedBox(height: 2),
+                                Text(
+                                  'Slot duration, prepayment, cancellation, smart slots',
+                                  style: AppTextStyles.caption,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(Icons.chevron_right,
+                              size: 20, color: AppColors.textMuted),
+                        ],
+                      ),
+                    ),
+                  ),
 
                   const SizedBox(height: 36),
                   // Save Button
@@ -437,55 +468,6 @@ class _EditSalonScreenState extends State<EditSalonScreen> {
                 ],
               ),
             ),
-    );
-  }
-
-  Widget _buildBookingWindowSelector() {
-    final options = [
-      {'label': '1 Week', 'days': 7},
-      {'label': '2 Weeks', 'days': 14},
-      {'label': '15 Days', 'days': 15},
-      {'label': '1 Month', 'days': 30},
-    ];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'How far in advance can customers book?',
-          style: AppTextStyles.bodySmall,
-        ),
-        const SizedBox(height: 10),
-        Wrap(
-          spacing: 10,
-          runSpacing: 8,
-          children: options.map((option) {
-            final days = option['days'] as int;
-            final isSelected = _advanceBookingDays == days;
-            return ChoiceChip(
-              label: Text(option['label'] as String),
-              selected: isSelected,
-              selectedColor: AppColors.primary,
-              backgroundColor: AppColors.cardBackground,
-              labelStyle: TextStyle(
-                color: isSelected ? AppColors.white : AppColors.textPrimary,
-                fontWeight: FontWeight.w500,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-                side: BorderSide(
-                  color: isSelected ? AppColors.primary : AppColors.border,
-                ),
-              ),
-              onSelected: (selected) {
-                if (selected) {
-                  setState(() => _advanceBookingDays = days);
-                }
-              },
-            );
-          }).toList(),
-        ),
-      ],
     );
   }
 

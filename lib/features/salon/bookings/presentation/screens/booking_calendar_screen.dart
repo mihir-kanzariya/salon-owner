@@ -40,6 +40,9 @@ class _BookingCalendarScreenState extends State<BookingCalendarScreen> {
   List<Map<String, dynamic>> _bookings = [];
   // memberId -> list of break blocks
   Map<String, List<Map<String, dynamic>>> _breaks = {};
+  // Smart slot discount info from salon booking_settings
+  double _smartSlotDiscount = 10;
+  String _smartSlotDiscountType = 'percentage';
 
   @override
   void initState() {
@@ -53,14 +56,21 @@ class _BookingCalendarScreenState extends State<BookingCalendarScreen> {
     try {
       final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
 
-      // Fetch stylists and bookings in parallel
+      // Fetch stylists, bookings, and salon data in parallel
       final results = await Future.wait([
         _api.get('${ApiConfig.salonDetail}/${widget.salonId}/members'),
         _api.get(
           '${ApiConfig.bookings}/salon/${widget.salonId}',
           queryParams: {'date': dateStr},
         ),
+        _api.get('${ApiConfig.salonDetail}/${widget.salonId}'),
       ]);
+
+      // Parse smart slot discount settings
+      final salonData = results[2]['data'] as Map<String, dynamic>? ?? {};
+      final bookingSettings = salonData['booking_settings'] as Map<String, dynamic>? ?? {};
+      _smartSlotDiscount = (bookingSettings['smart_slot_discount'] as num?)?.toDouble() ?? 10;
+      _smartSlotDiscountType = bookingSettings['smart_slot_discount_type']?.toString() ?? 'percentage';
 
       final membersData = results[0]['data'];
       _stylists = membersData is List
@@ -452,7 +462,9 @@ class _BookingCalendarScreenState extends State<BookingCalendarScreen> {
               children: [
                 if (isSmart)
                   Text(
-                    '\u2605 Smart Slot',
+                    _smartSlotDiscountType == 'percentage'
+                        ? '\u2605 Smart -${_smartSlotDiscount.toInt()}%'
+                        : '\u2605 Smart -\u20B9${_smartSlotDiscount.toInt()}',
                     style: TextStyle(
                       fontSize: 9,
                       fontWeight: FontWeight.w700,
@@ -577,14 +589,13 @@ class _BookingCalendarScreenState extends State<BookingCalendarScreen> {
   }
 
   void _createWalkIn() {
-    // Placeholder: navigate to a booking creation flow or show a dialog.
-    // For now, show a snackbar indicating the action.
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(context.read<LocaleProvider>().tr('add_walk_in')),
-        backgroundColor: AppColors.primary,
-      ),
-    );
+    Navigator.pushNamed(
+      context,
+      '/salon/walk-in',
+      arguments: widget.salonId,
+    ).then((result) {
+      if (result == true) _loadData();
+    });
   }
 }
 

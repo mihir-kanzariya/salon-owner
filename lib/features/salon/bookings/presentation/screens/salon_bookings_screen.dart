@@ -466,6 +466,19 @@ class _SalonBookingsScreenState extends State<SalonBookingsScreen>
           ],
         ),
       ),
+      floatingActionButton: _salonId != null
+          ? FloatingActionButton.extended(
+              onPressed: () {
+                Navigator.pushNamed(context, '/salon/walk-in', arguments: _salonId).then((result) {
+                  if (result == true) _loadData();
+                });
+              },
+              backgroundColor: AppColors.primary,
+              icon: const Icon(Icons.person_add, color: AppColors.white),
+              label: Text(l.tr('add_walk_in'),
+                  style: const TextStyle(color: AppColors.white, fontWeight: FontWeight.w600)),
+            )
+          : null,
       body: _isLoading
           ? const SkeletonList(child: BookingCardSkeleton())
           : _hasError

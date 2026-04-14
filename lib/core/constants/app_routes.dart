@@ -42,6 +42,9 @@ class AppRoutes {
   static const String salonWithdraw = '/salon/withdraw';
   static const String salonTransactions = '/salon/transactions';
 
+  static const String salonBookingSettings = '/salon/booking-settings';
+  static const String salonWalkIn = '/salon/walk-in';
+
   // Payment routes
   static const String payment = '/payment';
 }

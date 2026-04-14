@@ -368,6 +368,16 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
             },
           ),
           _ProfileMenuTile(
+            icon: Icons.settings_outlined,
+            title: 'Booking Settings',
+            subtitle: 'Slot duration, prepayment, cancellation policy',
+            onTap: () {
+              if (_salonId != null) {
+                Navigator.pushNamed(context, '/salon/booking-settings', arguments: _salonId);
+              }
+            },
+          ),
+          _ProfileMenuTile(
             icon: Icons.auto_awesome,
             title: l.tr('smart_scheduling'),
             subtitle: l.tr('smart_scheduling_desc'),
@@ -468,6 +478,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
     final settings = _salon['booking_settings'] ?? {};
     bool enabled = settings['smart_slot_enabled'] ?? true;
     double discount = (settings['smart_slot_discount'] ?? 10).toDouble();
+    String discountType = settings['smart_slot_discount_type']?.toString() ?? 'percentage';
 
     showDialog(
       context: context,
@@ -495,23 +506,57 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
                 ),
                 if (enabled) ...[
                   const SizedBox(height: 12),
+                  // Discount type toggle
+                  Row(
+                    children: [
+                      Text('Discount type:', style: AppTextStyles.bodyMedium),
+                      const Spacer(),
+                      SegmentedButton<String>(
+                        segments: const [
+                          ButtonSegment(value: 'percentage', label: Text('%')),
+                          ButtonSegment(value: 'flat', label: Text('\u20B9')),
+                        ],
+                        selected: {discountType},
+                        onSelectionChanged: (v) => setDialogState(() => discountType = v.first),
+                        style: ButtonStyle(
+                          backgroundColor: WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.selected)) return AppColors.primary;
+                            return AppColors.cardBackground;
+                          }),
+                          foregroundColor: WidgetStateProperty.resolveWith((states) {
+                            if (states.contains(WidgetState.selected)) return AppColors.white;
+                            return AppColors.textPrimary;
+                          }),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(l.tr('smart_slot_discount_label'), style: AppTextStyles.bodyMedium),
-                      Text('${discount.toInt()}%', style: AppTextStyles.h4.copyWith(color: AppColors.primary)),
+                      Text(
+                        discountType == 'percentage'
+                            ? '${discount.toInt()}%'
+                            : '\u20B9${discount.toInt()}',
+                        style: AppTextStyles.h4.copyWith(color: AppColors.primary),
+                      ),
                     ],
                   ),
                   Slider(
-                    value: discount,
-                    min: 5,
-                    max: 25,
-                    divisions: 4,
-                    label: '${discount.toInt()}%',
+                    value: discount.clamp(discountType == 'percentage' ? 5 : 10, discountType == 'percentage' ? 25 : 200),
+                    min: discountType == 'percentage' ? 5 : 10,
+                    max: discountType == 'percentage' ? 25 : 200,
+                    divisions: discountType == 'percentage' ? 4 : 19,
+                    label: discountType == 'percentage' ? '${discount.toInt()}%' : '\u20B9${discount.toInt()}',
                     activeColor: AppColors.primary,
                     onChanged: (v) => setDialogState(() => discount = v),
                   ),
-                  Text('5% — 25%', style: AppTextStyles.caption),
+                  Text(
+                    discountType == 'percentage' ? '5% \u2014 25%' : '\u20B910 \u2014 \u20B9200',
+                    style: AppTextStyles.caption,
+                  ),
                 ],
                 const SizedBox(height: 20),
                 // Explanation section
@@ -549,14 +594,21 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          'Current discount: ${discount.toInt()}% off on smart slots',
-                          style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
-                        ),
+                        Builder(builder: (_) {
+                          final discountLabel = discountType == 'percentage'
+                              ? '${discount.toInt()}% off'
+                              : '\u20B9${discount.toInt()} off';
+                          return Text(
+                            'Current discount: $discountLabel on smart slots',
+                            style: AppTextStyles.bodyMedium.copyWith(fontWeight: FontWeight.w600),
+                          );
+                        }),
                         const SizedBox(height: 6),
                         Builder(builder: (_) {
                           const examplePrice = 300;
-                          final discounted = (examplePrice * (1 - discount / 100)).round();
+                          final discounted = discountType == 'percentage'
+                              ? (examplePrice * (1 - discount / 100)).round()
+                              : (examplePrice - discount).round().clamp(0, examplePrice);
                           return Text(
                             l.tr('smart_example')
                                 .replaceAll('{price}', '$examplePrice')
@@ -581,6 +633,7 @@ class _SalonProfileScreenState extends State<SalonProfileScreen> {
                     'booking_settings': {
                       'smart_slot_enabled': enabled,
                       'smart_slot_discount': discount.toInt(),
+                      'smart_slot_discount_type': discountType,
                     },
                   });
                   _loadSalonProfile();

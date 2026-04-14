@@ -282,6 +282,11 @@ class NotificationService {
       nav.pushNamed('/booking-detail', arguments: bookingId.toString());
       return;
     }
+    // Handle booking lifecycle notification types without booking_id
+    if (type == 'booking_in_progress' || type == 'booking_completed') {
+      nav.pushNamed('/notifications');
+      return;
+    }
     if (type == 'chat') {
       nav.pushNamed('/salon/chat');
       return;
