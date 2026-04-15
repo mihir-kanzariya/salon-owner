@@ -380,7 +380,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
 
   Widget _buildCategoryDropdown() {
     return DropdownButtonFormField<String>(
-      initialValue: _selectedCategoryId,
+      value: _selectedCategoryId,
       decoration: InputDecoration(
         labelText: 'Category',
         prefixIcon: const Icon(
@@ -423,7 +423,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
 
   Widget _buildDurationDropdown() {
     return DropdownButtonFormField<int>(
-      initialValue: _durationOptions.contains(_durationMinutes)
+      value: _durationOptions.contains(_durationMinutes)
           ? _durationMinutes
           : _durationOptions.first,
       decoration: InputDecoration(

@@ -44,9 +44,22 @@ class _StylistProfileScreenState extends State<StylistProfileScreen>
       if (sp.memberId != null) {
         final res = await _api.get('${ApiConfig.stylists}/${sp.memberId}/profile');
         _profile = res['data'] ?? {};
-        _assignedServices = _profile['stylist_services'] ?? [];
+        final services = _profile['stylist_services'];
+        _assignedServices = services is List ? services : [];
       }
       setState(() => _isLoading = false);
+    } on ApiException catch (e) {
+      setState(() => _isLoading = false);
+      // 404 means endpoint not deployed yet — show empty profile gracefully
+      if (e.statusCode != 404 && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.message),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (_) {
       setState(() => _isLoading = false);
     }
@@ -59,9 +72,16 @@ class _StylistProfileScreenState extends State<StylistProfileScreen>
       if (sp.memberId != null) {
         final res = await _api.get('${ApiConfig.stylists}/${sp.memberId}/profile');
         final data = res['data'] ?? {};
-        _assignedServices = data['stylist_services'] ?? [];
+        final services = data['stylist_services'];
+        _assignedServices = services is List ? services : [];
       }
       setState(() => _isLoadingServices = false);
+    } on ApiException catch (e) {
+      setState(() => _isLoadingServices = false);
+      // 404 means endpoint not deployed yet — show empty list
+      if (e.statusCode == 404) {
+        _assignedServices = [];
+      }
     } catch (_) {
       setState(() => _isLoadingServices = false);
     }

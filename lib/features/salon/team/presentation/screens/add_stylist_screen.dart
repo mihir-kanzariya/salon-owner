@@ -92,12 +92,30 @@ class _AddStylistScreenState extends State<AddStylistScreen> {
         final res = await _api.get(
           '${ApiConfig.services}/salon/$salonId',
         );
-        _availableServices = res['data'] ?? [];
+        final data = res['data'];
+        _availableServices = data is List ? data : [];
       }
 
       setState(() => _isLoadingServices = false);
-    } catch (_) {
-      setState(() => _isLoadingServices = false);
+    } catch (e) {
+      setState(() {
+        _isLoadingServices = false;
+        _availableServices = [];
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Failed to load services. Pull down to retry.'),
+            backgroundColor: AppColors.error,
+            behavior: SnackBarBehavior.floating,
+            action: SnackBarAction(
+              label: 'Retry',
+              textColor: AppColors.white,
+              onPressed: _loadServices,
+            ),
+          ),
+        );
+      }
     }
   }
 
@@ -598,7 +616,7 @@ class _AddStylistScreenState extends State<AddStylistScreen> {
           ),
           const SizedBox(height: 16),
           DropdownButtonFormField<String>(
-            initialValue: _selectedRole,
+            value: _selectedRole,
             decoration: InputDecoration(
               prefixIcon: const Icon(Icons.badge_outlined, color: AppColors.textMuted, size: 22),
               border: OutlineInputBorder(

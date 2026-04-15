@@ -56,8 +56,13 @@ class _ServiceStylistsScreenState extends State<ServiceStylistsScreen> {
         _errorMessage = null;
       });
 
+      // Fetch both in parallel. The /services/:id/stylists endpoint is new
+      // and may not be deployed yet — wrap it to return empty on 404.
       final results = await Future.wait([
-        _api.get('${ApiConfig.services}/${widget.serviceId}/stylists'),
+        _api.get('${ApiConfig.services}/${widget.serviceId}/stylists').catchError(
+          (e) => <String, dynamic>{'data': []},
+          test: (e) => e is ApiException && e.statusCode == 404,
+        ),
         _api.get('${ApiConfig.salonDetail}/${widget.salonId}/members'),
       ]);
 
@@ -72,10 +77,15 @@ class _ServiceStylistsScreenState extends State<ServiceStylistsScreen> {
       );
 
       setState(() => _isLoading = false);
+    } on ApiException catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.message;
+      });
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = e.toString();
+        _errorMessage = 'Failed to load data. Please try again.';
       });
     }
   }
@@ -905,7 +915,7 @@ class _EditOverrideSheetState extends State<_EditOverrideSheet> {
               children: [
                 Expanded(
                   child: DropdownButtonFormField<int>(
-                    initialValue: _durationOptions.contains(_selectedDuration) ? _selectedDuration : _durationOptions.first,
+                    value: _durationOptions.contains(_selectedDuration) ? _selectedDuration : _durationOptions.first,
                     decoration: InputDecoration(
                       labelText: 'Duration',
                       prefixIcon: const Icon(Icons.schedule, size: 20),
@@ -955,7 +965,7 @@ class _EditOverrideSheetState extends State<_EditOverrideSheet> {
 
             // Skill level
             DropdownButtonFormField<String?>(
-              initialValue: _skillLevel,
+              value: _skillLevel,
               decoration: InputDecoration(
                 labelText: 'Skill Level',
                 prefixIcon: const Icon(Icons.star_outline, size: 20),
@@ -1115,7 +1125,7 @@ class _CopyToStylistsSheetState extends State<_CopyToStylistsSheet> {
 
             // Source dropdown
             DropdownButtonFormField<String>(
-              initialValue: _sourceMemberId,
+              value: _sourceMemberId,
               decoration: InputDecoration(
                 labelText: 'Copy from',
                 prefixIcon: const Icon(Icons.person_outline, size: 20),

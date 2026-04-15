@@ -333,7 +333,8 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
 
   Widget _buildServiceCard(Map<String, dynamic> service) {
     final name = service['name'] ?? '';
-    final duration = service['duration_minutes'] ?? 0;
+    final rawDuration = service['duration_minutes'];
+    final duration = rawDuration is int ? rawDuration : int.tryParse(rawDuration?.toString() ?? '') ?? 0;
     final genderType = (service['gender'] ?? service['gender_type'] ?? 'unisex').toString();
     final isActive = service['is_active'] == true;
 

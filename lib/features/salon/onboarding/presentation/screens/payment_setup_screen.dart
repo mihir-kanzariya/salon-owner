@@ -997,7 +997,7 @@ class _PaymentSetupScreenState extends State<PaymentSetupScreen>
       const SizedBox(height: 4),
       // Business Type Dropdown
       DropdownButtonFormField<String>(
-        initialValue: _businessType,
+        value: _businessType,
         decoration: InputDecoration(
           labelText: l.tr('business_type'),
           prefixIcon:

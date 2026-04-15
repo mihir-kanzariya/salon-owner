@@ -75,7 +75,11 @@ class _WalkInBookingScreenState extends State<WalkInBookingScreen> {
 
       final membersData = results[1]['data'];
       _stylists = membersData is List
-          ? membersData.cast<Map<String, dynamic>>()
+          ? membersData
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .where((m) => (m['role'] ?? '').toString() == 'stylist')
+              .toList()
           : <Map<String, dynamic>>[];
 
       setState(() => _isLoading = false);

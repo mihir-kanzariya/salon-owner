@@ -39,32 +39,43 @@ class _BookingSettingsScreenState extends State<BookingSettingsScreen> {
     _loadSettings();
   }
 
+  static int? _parseInt(dynamic v) {
+    if (v == null) return null;
+    if (v is int) return v;
+    if (v is num) return v.toInt();
+    return int.tryParse(v.toString());
+  }
+
+  static double? _parseDouble(dynamic v) {
+    if (v == null) return null;
+    if (v is double) return v;
+    if (v is num) return v.toDouble();
+    return double.tryParse(v.toString());
+  }
+
   Future<void> _loadSettings() async {
     try {
       setState(() => _isLoading = true);
       final res = await _api.get('${ApiConfig.salonDetail}/${widget.salonId}');
-      final salon = res['data'] ?? {};
-      final s = salon['booking_settings'] as Map<String, dynamic>? ?? {};
+      final salon = res['data'] is Map ? Map<String, dynamic>.from(res['data'] as Map) : <String, dynamic>{};
+      final raw = salon['booking_settings'];
+      final s = raw is Map ? Map<String, dynamic>.from(raw) : <String, dynamic>{};
 
       setState(() {
-        _slotDurationMinutes =
-            (s['slot_duration_minutes'] as num?)?.toInt() ?? 15;
+        _slotDurationMinutes = _parseInt(s['slot_duration_minutes']) ?? 15;
         _bufferBetweenBookingsMinutes =
-            (s['buffer_between_bookings_minutes'] as num?)?.toInt() ?? 5;
+            _parseInt(s['buffer_between_bookings_minutes']) ?? 5;
         _advanceBookingDays =
-            ((s['advance_booking_days'] ?? s['max_advance_days']) as num?)
-                    ?.toInt() ??
-                15;
+            _parseInt(s['advance_booking_days'] ?? s['max_advance_days']) ?? 15;
         _autoAcceptBookings =
             s['auto_accept_bookings'] ?? s['auto_confirm'] ?? false;
         _requirePrepayment =
             s['require_prepayment'] ?? s['require_payment'] ?? false;
-        _tokenAmount = (s['token_amount'] as num?)?.toDouble() ?? 0;
+        _tokenAmount = _parseDouble(s['token_amount']) ?? 0;
         _cancellationPolicyHours =
-            (s['cancellation_policy_hours'] as num?)?.toInt() ?? 2;
+            _parseInt(s['cancellation_policy_hours']) ?? 2;
         _smartSlotEnabled = s['smart_slot_enabled'] ?? true;
-        _smartSlotDiscount =
-            (s['smart_slot_discount'] as num?)?.toDouble() ?? 10;
+        _smartSlotDiscount = _parseDouble(s['smart_slot_discount']) ?? 10;
         _smartSlotDiscountType =
             s['smart_slot_discount_type']?.toString() ?? 'percentage';
         _autoStartBookings = s['auto_start_bookings'] ?? false;
