@@ -253,8 +253,10 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           backgroundColor: AppColors.success,
         ),
       );
-      Navigator.pop(context, true);
-      Navigator.pushNamed(
+      // Replace current screen with service-stylists screen and signal
+      // the parent that a service was created (via pop result from the
+      // replacement route).
+      Navigator.pushReplacementNamed(
         context,
         '/salon/service-stylists',
         arguments: {
@@ -264,6 +266,7 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           'base_duration': _durationMinutes,
           'salon_id': widget.salonId,
         },
+        result: true,
       );
     }
   }

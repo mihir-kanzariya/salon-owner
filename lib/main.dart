@@ -249,11 +249,15 @@ class HeloHairBusinessApp extends StatelessWidget {
         if (args == null) return _notFoundRoute();
         return SlidePageRoute(
           child: ServiceStylistsScreen(
-            serviceId: args['service_id'] as String,
-            serviceName: args['service_name'] as String,
-            basePrice: args['base_price'] as num,
-            baseDuration: args['base_duration'] as int,
-            salonId: args['salon_id'] as String,
+            serviceId: args['service_id']?.toString() ?? '',
+            serviceName: args['service_name']?.toString() ?? 'Service',
+            basePrice: args['base_price'] is num
+                ? args['base_price']
+                : num.tryParse(args['base_price']?.toString() ?? '0') ?? 0,
+            baseDuration: args['base_duration'] is int
+                ? args['base_duration']
+                : int.tryParse(args['base_duration']?.toString() ?? '30') ?? 30,
+            salonId: args['salon_id']?.toString() ?? '',
           ),
         );
       case '/salon/walk-in':

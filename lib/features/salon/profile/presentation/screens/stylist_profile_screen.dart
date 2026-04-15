@@ -132,10 +132,16 @@ class _StylistProfileScreenState extends State<StylistProfileScreen>
         itemCount: _assignedServices.length,
         separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
-          final ss = _assignedServices[index] as Map<String, dynamic>;
-          final service = ss['service'] as Map<String, dynamic>? ?? {};
-          final duration = ss['custom_duration_minutes'] ?? service['duration_minutes'] ?? 30;
-          final price = ss['custom_price'] ?? service['price'] ?? 0;
+          final ss = _assignedServices[index];
+          if (ss is! Map) return const SizedBox.shrink();
+          final ssMap = Map<String, dynamic>.from(ss);
+          final service = ssMap['service'] is Map
+              ? Map<String, dynamic>.from(ssMap['service'] as Map)
+              : <String, dynamic>{};
+          final rawDuration = ssMap['custom_duration_minutes'] ?? service['duration_minutes'] ?? 30;
+          final duration = rawDuration is int ? rawDuration : int.tryParse(rawDuration.toString()) ?? 30;
+          final rawPrice = ssMap['custom_price'] ?? service['price'] ?? 0;
+          final price = rawPrice is num ? rawPrice : num.tryParse(rawPrice.toString()) ?? 0;
 
           return Container(
             padding: const EdgeInsets.all(14),
