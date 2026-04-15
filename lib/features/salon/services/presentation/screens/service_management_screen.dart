@@ -180,6 +180,25 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
     }
   }
 
+  void _navigateToServiceStylists(Map<String, dynamic> service) {
+    if (_salonId == null) return;
+    Navigator.pushNamed(
+      context,
+      '/salon/service-stylists',
+      arguments: {
+        'service_id': service['id'].toString(),
+        'service_name': service['name'] ?? 'Service',
+        'base_price': service['price'] is num
+            ? service['price']
+            : num.tryParse(service['price']?.toString() ?? '0') ?? 0,
+        'base_duration': service['duration_minutes'] is int
+            ? service['duration_minutes']
+            : int.tryParse(service['duration_minutes']?.toString() ?? '30') ?? 30,
+        'salon_id': _salonId!,
+      },
+    ).then((_) => _loadServices());
+  }
+
   void _navigateToEditService(Map<String, dynamic> service) async {
     if (_salonId == null) return;
     final result = await Navigator.push<bool>(
@@ -315,7 +334,6 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
   Widget _buildServiceCard(Map<String, dynamic> service) {
     final name = service['name'] ?? '';
     final duration = service['duration_minutes'] ?? 0;
-    final price = service['price'];
     final genderType = (service['gender'] ?? service['gender_type'] ?? 'unisex').toString();
     final isActive = service['is_active'] == true;
 
@@ -338,7 +356,8 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
         return false;
       },
       child: GestureDetector(
-        onTap: () => _navigateToEditService(service),
+        onTap: () => _navigateToServiceStylists(service),
+        onLongPress: () => _navigateToEditService(service),
         child: Container(
           margin: const EdgeInsets.only(bottom: 10),
           padding: const EdgeInsets.all(14),
@@ -376,7 +395,7 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
               ),
               const SizedBox(width: 12),
 
-              // Name, duration, gender chip
+              // Name, duration, gender chip, stylist info
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -407,29 +426,39 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
                         _GenderChip(genderType: genderType),
                       ],
                     ),
+                    const SizedBox(height: 4),
+                    _buildStylistInfo(service),
                   ],
                 ),
               ),
 
-              // Price + toggle
+              // Price + toggle + edit
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text(
-                    '\u20B9${_formatPrice(price)}',
-                    style: AppTextStyles.labelLarge.copyWith(
-                      color: AppColors.primary,
-                    ),
-                  ),
+                  _buildPriceRange(service),
                   const SizedBox(height: 2),
-                  SizedBox(
-                    height: 28,
-                    child: Switch(
-                      value: isActive,
-                      onChanged: (_) => _toggleActive(service),
-                      activeThumbColor: AppColors.primary,
-                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      InkWell(
+                        onTap: () => _navigateToEditService(service),
+                        borderRadius: BorderRadius.circular(6),
+                        child: const Padding(
+                          padding: EdgeInsets.all(4),
+                          child: Icon(Icons.edit_outlined, size: 18, color: AppColors.textMuted),
+                        ),
+                      ),
+                      SizedBox(
+                        height: 28,
+                        child: Switch(
+                          value: isActive,
+                          onChanged: (_) => _toggleActive(service),
+                          activeThumbColor: AppColors.primary,
+                          materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -437,6 +466,58 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildStylistInfo(Map<String, dynamic> service) {
+    final stylistCount = service['stylist_count'] ?? service['assigned_stylists_count'];
+    if (stylistCount == null) {
+      return const SizedBox.shrink();
+    }
+    final count = stylistCount is int ? stylistCount : int.tryParse(stylistCount.toString()) ?? 0;
+    if (count == 0) {
+      return Row(
+        children: [
+          Icon(Icons.warning_amber, size: 13, color: AppColors.warning),
+          const SizedBox(width: 4),
+          Text(
+            'No stylists',
+            style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.warning),
+          ),
+        ],
+      );
+    }
+    return Row(
+      children: [
+        Icon(Icons.people_outline, size: 13, color: AppColors.textMuted),
+        const SizedBox(width: 4),
+        Text(
+          '$count stylist${count == 1 ? '' : 's'}',
+          style: AppTextStyles.caption,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPriceRange(Map<String, dynamic> service) {
+    final price = service['price'];
+    final minPrice = service['min_price'] ?? service['price_range_min'];
+    final maxPrice = service['max_price'] ?? service['price_range_max'];
+
+    if (minPrice != null && maxPrice != null) {
+      final min = minPrice is num ? minPrice : num.tryParse(minPrice.toString()) ?? 0;
+      final max = maxPrice is num ? maxPrice : num.tryParse(maxPrice.toString()) ?? 0;
+      if (min != max) {
+        return Text(
+          '\u20B9${_formatPrice(min)} - \u20B9${_formatPrice(max)}',
+          style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
+        );
+      }
+    }
+
+    return Text(
+      '\u20B9${_formatPrice(price)}',
+      style: AppTextStyles.labelLarge.copyWith(color: AppColors.primary),
     );
   }
 

@@ -15,15 +15,26 @@ class StylistProfileScreen extends StatefulWidget {
   State<StylistProfileScreen> createState() => _StylistProfileScreenState();
 }
 
-class _StylistProfileScreenState extends State<StylistProfileScreen> {
+class _StylistProfileScreenState extends State<StylistProfileScreen>
+    with SingleTickerProviderStateMixin {
   final ApiService _api = ApiService();
   bool _isLoading = true;
   Map<String, dynamic> _profile = {};
+  List<dynamic> _assignedServices = [];
+  bool _isLoadingServices = false;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _loadProfile();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadProfile() async {
@@ -33,10 +44,26 @@ class _StylistProfileScreenState extends State<StylistProfileScreen> {
       if (sp.memberId != null) {
         final res = await _api.get('${ApiConfig.stylists}/${sp.memberId}/profile');
         _profile = res['data'] ?? {};
+        _assignedServices = _profile['stylist_services'] ?? [];
       }
       setState(() => _isLoading = false);
     } catch (_) {
       setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _loadServices() async {
+    try {
+      setState(() => _isLoadingServices = true);
+      final sp = context.read<SalonProvider>();
+      if (sp.memberId != null) {
+        final res = await _api.get('${ApiConfig.stylists}/${sp.memberId}/profile');
+        final data = res['data'] ?? {};
+        _assignedServices = data['stylist_services'] ?? [];
+      }
+      setState(() => _isLoadingServices = false);
+    } catch (_) {
+      setState(() => _isLoadingServices = false);
     }
   }
 
@@ -46,10 +73,129 @@ class _StylistProfileScreenState extends State<StylistProfileScreen> {
 
     return Scaffold(
       backgroundColor: AppColors.background,
-      appBar: AppBar(title: const Text('Profile')),
+      appBar: AppBar(
+        title: const Text('Profile'),
+        bottom: sp.isStylist
+            ? TabBar(
+                controller: _tabController,
+                labelColor: AppColors.primary,
+                unselectedLabelColor: AppColors.textMuted,
+                indicatorColor: AppColors.primary,
+                tabs: const [
+                  Tab(text: 'Profile'),
+                  Tab(text: 'Services'),
+                ],
+              )
+            : null,
+      ),
       body: _isLoading
           ? const LoadingWidget()
-          : RefreshIndicator(
+          : sp.isStylist
+              ? TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildProfileTab(sp),
+                    _buildServicesTab(sp),
+                  ],
+                )
+              : _buildProfileTab(sp),
+    );
+  }
+
+  Widget _buildServicesTab(SalonProvider sp) {
+    if (_isLoadingServices) return const LoadingWidget();
+
+    if (_assignedServices.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.content_cut_outlined, size: 48, color: AppColors.textMuted),
+            const SizedBox(height: 12),
+            const Text('No services assigned', style: AppTextStyles.bodyMedium),
+            const SizedBox(height: 4),
+            Text(
+              'Contact your salon manager to assign services',
+              style: AppTextStyles.caption,
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _loadServices,
+      child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(16),
+        itemCount: _assignedServices.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
+        itemBuilder: (context, index) {
+          final ss = _assignedServices[index] as Map<String, dynamic>;
+          final service = ss['service'] as Map<String, dynamic>? ?? {};
+          final duration = ss['custom_duration_minutes'] ?? service['duration_minutes'] ?? 30;
+          final price = ss['custom_price'] ?? service['price'] ?? 0;
+
+          return Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.cardBackground,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.content_cut, color: AppColors.primary, size: 20),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        service['name'] ?? 'Service',
+                        style: AppTextStyles.labelLarge,
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Text(
+                            '\u20B9$price',
+                            style: AppTextStyles.bodySmall.copyWith(color: AppColors.success),
+                          ),
+                          const SizedBox(width: 12),
+                          Icon(Icons.schedule, size: 12, color: AppColors.textMuted),
+                          const SizedBox(width: 4),
+                          Text('${duration}m', style: AppTextStyles.caption),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildProfileTab(SalonProvider sp) {
+    return RefreshIndicator(
               onRefresh: _loadProfile,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -196,7 +342,6 @@ class _StylistProfileScreenState extends State<StylistProfileScreen> {
                   ],
                 ),
               ),
-            ),
     );
   }
 

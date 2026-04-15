@@ -190,6 +190,31 @@ class ApiService {
     throw ApiException(statusCode: 401, message: 'Session expired');
   }
   
+  // PATCH
+  Future<Map<String, dynamic>> patch(String path, {
+    Map<String, dynamic>? body,
+    bool auth = true,
+  }) async {
+    for (int attempt = 0; attempt < 2; attempt++) {
+      try {
+        final response = await http.patch(
+          _buildUri(path),
+          headers: await _getHeaders(auth: auth),
+          body: body != null ? jsonEncode(body) : null,
+        ).timeout(const Duration(seconds: 30));
+        return await _handleResponse(response);
+      } on ApiException catch (e) {
+        if (e.statusCode == 401 && attempt == 0) continue;
+        rethrow;
+      } on SocketException {
+        throw ApiException(statusCode: 0, message: 'No internet connection');
+      } on TimeoutException {
+        throw ApiException(statusCode: 0, message: 'Request timed out. Please try again.');
+      }
+    }
+    throw ApiException(statusCode: 401, message: 'Session expired');
+  }
+
   // DELETE
   Future<Map<String, dynamic>> delete(String path, {bool auth = true}) async {
     for (int attempt = 0; attempt < 2; attempt++) {

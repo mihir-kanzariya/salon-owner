@@ -34,6 +34,7 @@ import 'features/salon/analytics/presentation/screens/analytics_screen.dart';
 import 'features/salon/bookings/presentation/screens/slot_blocking_screen.dart';
 import 'features/salon/bookings/presentation/screens/booking_calendar_screen.dart';
 import 'features/salon/bookings/presentation/screens/walk_in_booking_screen.dart';
+import 'features/salon/services/presentation/screens/service_stylists_screen.dart';
 import 'features/salon/settings/presentation/screens/booking_settings_screen.dart';
 import 'features/chat/presentation/screens/chat_list_screen.dart';
 import 'services/supabase_chat_service.dart';
@@ -243,6 +244,18 @@ class HeloHairBusinessApp extends StatelessWidget {
         final salonId = settings.arguments as String? ?? '';
         if (salonId.isEmpty) return _notFoundRoute();
         return SlidePageRoute(child: BookingSettingsScreen(salonId: salonId));
+      case '/salon/service-stylists':
+        final args = settings.arguments as Map<String, dynamic>?;
+        if (args == null) return _notFoundRoute();
+        return SlidePageRoute(
+          child: ServiceStylistsScreen(
+            serviceId: args['service_id'] as String,
+            serviceName: args['service_name'] as String,
+            basePrice: args['base_price'] as num,
+            baseDuration: args['base_duration'] as int,
+            salonId: args['salon_id'] as String,
+          ),
+        );
       case '/salon/walk-in':
         final salonId = settings.arguments as String? ?? '';
         if (salonId.isEmpty) return _notFoundRoute();

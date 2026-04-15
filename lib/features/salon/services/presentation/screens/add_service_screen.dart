@@ -136,16 +136,29 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
     };
 
     try {
+      Map<String, dynamic> result;
       if (widget.isEditMode) {
-        await _api.put(
+        result = await _api.put(
           '${ApiConfig.services}/${widget.serviceId}',
           body: body,
         );
       } else {
-        await _api.post(ApiConfig.services, body: body);
+        result = await _api.post(ApiConfig.services, body: body);
       }
 
       if (!mounted) return;
+
+      if (!widget.isEditMode) {
+        // Show assign-to-all-stylists dialog for new services
+        final newServiceId = result['data']?['id']?.toString();
+        final newServiceName = _nameController.text.trim();
+        final newPrice = num.tryParse(_priceController.text.trim()) ?? 0;
+        if (newServiceId != null) {
+          await _showAssignStylistsDialog(newServiceId, newServiceName, newPrice);
+          return;
+        }
+      }
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -165,6 +178,92 @@ class _AddServiceScreenState extends State<AddServiceScreen> {
           content: Text('Failed to save service: $e'),
           backgroundColor: AppColors.error,
         ),
+      );
+    }
+  }
+
+  // ------------------------------------------------------------------
+  // Assign stylists dialog (after creating a new service)
+  // ------------------------------------------------------------------
+
+  Future<void> _showAssignStylistsDialog(String serviceId, String serviceName, num price) async {
+    if (!mounted) return;
+
+    final choice = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Service Created'),
+        content: const Text('Assign this service to all stylists?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('No'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Yes'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted) return;
+
+    if (choice == true) {
+      // Bulk assign to all stylists
+      try {
+        final membersRes = await _api.get('${ApiConfig.salonDetail}/${widget.salonId}/members');
+        final members = membersRes['data'] as List<dynamic>? ?? [];
+        final stylistIds = members
+            .where((m) => (m['role'] ?? '').toString() == 'stylist')
+            .map((m) => m['id'].toString())
+            .toList();
+
+        if (stylistIds.isNotEmpty) {
+          await _api.put(
+            '${ApiConfig.services}/$serviceId/stylists',
+            body: {'stylist_ids': stylistIds},
+          );
+        }
+
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Service created and assigned to all stylists'),
+            backgroundColor: AppColors.success,
+          ),
+        );
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Service created, but failed to assign stylists: $e'),
+            backgroundColor: AppColors.warning,
+          ),
+        );
+      }
+      if (mounted) Navigator.pop(context, true);
+    } else {
+      // Navigate to Service Stylists Screen
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Service created successfully'),
+          backgroundColor: AppColors.success,
+        ),
+      );
+      Navigator.pop(context, true);
+      Navigator.pushNamed(
+        context,
+        '/salon/service-stylists',
+        arguments: {
+          'service_id': serviceId,
+          'service_name': serviceName,
+          'base_price': price,
+          'base_duration': _durationMinutes,
+          'salon_id': widget.salonId,
+        },
       );
     }
   }
