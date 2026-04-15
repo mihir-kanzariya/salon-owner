@@ -142,8 +142,10 @@ class _BookingCalendarScreenState extends State<BookingCalendarScreen> {
 
   List<Map<String, dynamic>> _bookingsForStylist(String memberId) {
     return _bookings.where((b) {
-      final bMemberId =
-          b['member_id']?.toString() ?? b['memberId']?.toString() ?? '';
+      final bMemberId = b['stylist_member_id']?.toString()
+          ?? b['member_id']?.toString()
+          ?? b['memberId']?.toString()
+          ?? '';
       return bMemberId == memberId;
     }).toList();
   }
