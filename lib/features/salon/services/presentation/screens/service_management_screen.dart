@@ -356,26 +356,29 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
         // Return false because _deleteService handles the refresh itself.
         return false;
       },
-      child: GestureDetector(
-        onTap: () => _navigateToServiceStylists(service),
-        onLongPress: () => _navigateToEditService(service),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 10),
-          padding: const EdgeInsets.all(14),
-          decoration: BoxDecoration(
-            color: AppColors.cardBackground,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: isActive ? AppColors.border : AppColors.error.withValues(alpha: 0.3),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
+      child: Material(
+        color: AppColors.cardBackground,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          onTap: () => _navigateToServiceStylists(service),
+          onLongPress: () => _navigateToEditService(service),
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            margin: const EdgeInsets.only(bottom: 10),
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isActive ? AppColors.border : AppColors.error.withValues(alpha: 0.3),
               ),
-            ],
-          ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
           child: Row(
             children: [
               // Leading icon
@@ -465,6 +468,7 @@ class _ServiceManagementScreenState extends State<ServiceManagementScreen> {
               ),
             ],
           ),
+        ),
         ),
       ),
     );
